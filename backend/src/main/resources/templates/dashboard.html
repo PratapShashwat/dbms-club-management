@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">DBMS Club Portal</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="nav-link text-white" th:text="'Welcome, ' + ${userName}">Welcome, User</span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-danger" href="/logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+
+    <div th:if="${isSuperAdmin}" class="alert alert-warning shadow-sm">
+        <strong>Super Admin Mode Active:</strong> You have full bypass privileges to modify GenSecs and overall settings.
+        <a href="/superadmin" class="btn btn-sm btn-dark ms-3">Go to SuperAdmin Console</a>
+    </div>
+
+    
+        <div th:if="${isGenSec}" class="alert alert-success shadow-sm">
+            <strong>GenSec Workspace Active:</strong> You have the power to manage clubs and appoint secretaries.
+            <a href="/gensec" class="btn btn-sm btn-success ms-3">Go to GenSec Console</a>
+        </div>
+        <!-- Section 1: My Clubs -->
+    <h3 class="mb-3 text-primary border-bottom pb-2">My Clubs & Memberships</h3>
+    <div class="row mb-5">
+        <div class="col-md-4 mb-3" th:each="club : ${myClubs}">
+            <div class="card h-100 shadow-sm border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-primary" th:text="${club.name}">Club Name</h5>
+                    <p class="text-muted mb-2">You are a member here.</p>
+                    <a th:href="@{/club/{id}(id=${club.clubId})}" class="btn btn-outline-primary btn-sm">Enter Club Workspace</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-12" th:if="${myClubs.isEmpty()}">
+            <p class="text-muted">You are not a member of any clubs yet. Explore below to apply!</p>
+        </div>
+    </div>
+
+    <!-- Section 2: Explore Councils -->
+    <h3 class="mb-3 border-bottom pb-2">Explore Councils & Clubs</h3>
+    <div class="row">
+        <div class="col-md-12 mb-4" th:each="council : ${councils}">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0" th:text="${council.name}">Council Name</h5>
+                </div>
+                <div class="card-body">
+                    <p th:text="${council.description}">Description</p>
+                    <hr>
+                    <h6>Clubs under this Council:</h6>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center" th:each="club : ${allClubs}" th:if="${club.council != null and club.council.councilId == council.councilId}"> 
+                            <a th:href="@{/club/{id}(id=${club.clubId})}" th:text="${club.name}" class="text-decoration-none fw-bold">Club Name</a>
+                            
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
