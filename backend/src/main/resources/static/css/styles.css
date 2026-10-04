@@ -14,6 +14,7 @@ body {
 /* Y2K Neobrutalist Cards */
 .card {
     background: #ffffff;
+    overflow: hidden !important;
     border: 3px solid #000000 !important;
     border-radius: 50px !important;
     box-shadow: 6px 6px 0px #ff00ff; /* Neon pink shadow */
