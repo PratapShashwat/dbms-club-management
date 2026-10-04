@@ -1,60 +1,51 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Club View</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
+<head><title>Club View</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
 <body class="bg-light">
-
-<nav class="navbar navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" th:text="${club.name}">Club</a>
-        <a class="nav-link text-white" href="/">Back to Dashboard</a>
-    </div>
-</nav>
-
+<nav class="navbar navbar-dark bg-dark"><div class="container"><a class="navbar-brand" th:text="${club.name}">Club</a><a class="nav-link text-white" href="/">Dashboard</a><a class="nav-link text-white" href="/profile">My Profile</a></div></nav>
 <div class="container mt-4">
+    <div th:if="${param.error}" class="alert alert-danger fw-bold shadow-sm" th:text="${param.error}"></div>
+    <div th:if="${param.success}" class="alert alert-success fw-bold shadow-sm" th:text="${param.success}"></div>
+
     <div class="row">
-        <!-- Public Info -->
         <div class="col-md-12 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h3 class="text-primary" th:text="${club.name}"></h3>
-                    <p class="text-muted" th:text="'Description and info about the club...'"></p>
+                    <h5>Allocated Room: <span class="badge bg-secondary" th:text="${allocatedRoom != null ? allocatedRoom.room.buildingName + ' ' + allocatedRoom.room.roomNumber : 'Not Assigned'}"></span></h5>
                     
-                    <h5>Available Verticals</h5>
-                    <ul>
-                        <li th:each="v : ${verticals}" th:text="${v.name}"></li>
-                        <li th:if="${verticals.isEmpty()}">No specific verticals listed.</li>
-                    </ul>
+                    <h5 class="mt-3">Available Verticals</h5>
+                    <ul><li th:each="v : ${verticals}" th:text="${v.name}"></li></ul>
 
                     <h5>Available Forms</h5>
                     <ul class="list-group">
                         <li class="list-group-item d-flex justify-content-between align-items-center" th:each="form : ${forms}">
-                            <span th:text="${form.title}">Form Title</span>
-                            <a th:href="@{/form/{id}(id=${form.formId})}" class="btn btn-sm btn-primary">Fill Out</a>
+                            <span th:text="${form.title}"></span><a th:href="@{/form/{id}(id=${form.formId})}" class="btn btn-sm btn-primary">Fill Out</a>
                         </li>
-                        <li class="list-group-item text-muted" th:if="${forms.isEmpty()}">No active forms available.</li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <!-- Member Exclusive View -->
         <div class="col-md-12" th:if="${isMember}">
             <div class="card shadow-sm border-info mb-4">
                 <div class="card-header bg-info text-white"><h5>Member Portal: Club Directory</h5></div>
                 <div class="card-body">
                     <table class="table table-sm">
-                        <thead><tr><th>Name</th><th>Roll No</th><th>POR</th></tr></thead>
+                        <thead><tr><th>Name</th><th>Roll No</th><th>Vertical</th><th>POR</th><th th:if="${canEditPors}">Demote</th></tr></thead>
                         <tbody>
                             <tr th:each="m : ${allMembers}">
-                                <td><a th:href="@{/profile(rollNumber=${m.student.rollNumber}, canViewPrivacy=${canEditMembers or canEditPors})}" th:text="${m.student.name}"></a></td>
-                                <td th:text="${m.student.rollNumber}"></td>
+                                <td th:text="${m.student.name}"></td><td th:text="${m.student.rollNumber}"></td><td th:text="${m.vertical != null ? m.vertical.name : 'None'}"></td>
                                 <td>
                                     <span class="badge bg-secondary" th:if="${m.role != null}" th:text="${m.role.title}"></span>
                                     <span class="badge bg-light text-dark" th:if="${m.role == null}">Member</span>
+                                </td>
+                                <td th:if="${canEditPors}">
+                                    <form th:if="${m.role != null and m.role.title != 'GenSec'}" th:action="@{/club/{id}/remove-por(id=${club.clubId})}" method="POST">
+                                        <input type="hidden" name="rollNumber" th:value="${m.student.rollNumber}">
+                                        <input type="hidden" name="membershipId" th:value="${m.membershipId}">
+                                        <button class="btn btn-sm btn-danger">Demote</button>
+                                    </form>
                                 </td>
                             </tr>
                         </tbody>
@@ -62,47 +53,28 @@
                 </div>
             </div>
 
-            <!-- POR Powers -->
             <div class="row">
-                <!-- Forms Power -->
                 <div class="col-md-4" th:if="${canCreateForms}">
                     <div class="card shadow-sm border-warning h-100">
                         <div class="card-body">
                             <h5 class="text-warning">Float Forms</h5>
                             <a th:each="f : ${myCreatedForms}" th:href="@{/form/{id}/submissions(id=${f.formId})}" class="d-block mb-2" th:text="'View: ' + ${f.title}"></a>
-                            <hr>
                             <form th:action="@{/club/{id}/create-form(id=${club.clubId})}" method="POST">
                                 <input type="text" class="form-control form-control-sm mb-2" name="title" placeholder="Title" required>
                                 <input type="text" class="form-control form-control-sm mb-2" name="formType" placeholder="Type" required>
-                                <select class="form-select form-select-sm mb-2" name="targetAudience" required>
-    <option value="ALL">All Students</option>
-    <option value="THIS_CLUB">Club Members</option>
-    <option value="PORS_ONLY">POR Holders Only</option>
-</select>
-                                <!-- Using actual textarea for valid JSON parsing -->
-                                <textarea class="form-control form-control-sm mb-2" name="questionsJson" placeholder='["Question 1?", "Question 2?"]' required></textarea>
+                                <select class="form-select form-select-sm mb-2" name="targetAudience" required><option value="ALL">All Students</option><option value="THIS_CLUB">Club Members</option></select>
+                                <textarea class="form-control form-control-sm mb-2" name="questionsJson" placeholder='["Question 1?"]' required></textarea>
                                 <button type="submit" class="btn btn-sm btn-warning w-100">Publish Form</button>
                             </form>
                         </div>
                     </div>
                 </div>
 
-                <!-- Manage Members / PORs Power (Placeholder logic for brevity, UI visible) -->
                 <div class="col-md-4" th:if="${canEditMembers}">
                     <div class="card shadow-sm border-primary h-100">
                         <div class="card-body">
                             <h5 class="text-primary">Edit Memberships</h5>
-                            <p class="text-muted small">You have power to Add/Remove general members.</p>
-                            
-<form th:action="@{/club/{id}/add-member(id=${club.clubId})}" method="POST" class="d-flex gap-2 mb-2">
-    <input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No" required>
-    <button class="btn btn-sm btn-primary">Add</button>
-</form>
-<form th:action="@{/club/{id}/remove-member(id=${club.clubId})}" method="POST" class="d-flex gap-2">
-    <input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No" required>
-    <button class="btn btn-sm btn-danger">Remove</button>
-</form>
-
+                            <form th:action="@{/club/{id}/add-member(id=${club.clubId})}" method="POST" class="d-flex gap-2 mb-2"><input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No" required><button class="btn btn-sm btn-primary">Add</button></form>
                         </div>
                     </div>
                 </div>
@@ -110,28 +82,16 @@
                 <div class="col-md-4" th:if="${canEditPors}">
                     <div class="card shadow-sm border-primary h-100">
                         <div class="card-body">
-                            <h5 class="text-primary">Edit PORs</h5>
-                            <p class="text-muted small">You have power to assign PORs to existing members.</p>
-                            
+                            <h5 class="text-primary">Assign POR</h5>
                             <form th:action="@{/club/{id}/assign-por(id=${club.clubId})}" method="POST" class="d-flex flex-column gap-2 mb-2">
                                 <input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No" required>
-                                <select class="form-select form-select-sm" name="roleId" required>
-                                    <option th:each="r : ${clubRoles}" th:value="${r.roleId}" th:text="${r.title}"></option>
-                                    <option th:if="${clubRoles.isEmpty()}" value="" disabled>No PORs created yet</option>
-                                </select>
+                                <select class="form-select form-select-sm" name="roleId" required><option th:each="r : ${clubRoles}" th:value="${r.roleId}" th:text="${r.title}"></option></select>
                                 <button class="btn btn-sm btn-primary">Assign POR</button>
                             </form>
-                            <form th:action="@{/club/{id}/remove-por(id=${club.clubId})}" method="POST" class="d-flex gap-2">
-                                <input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No to Demote" required>
-                                <button class="btn btn-sm btn-danger">Demote</button>
-                            </form>
-
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-</body>
-</html>
+</div></body></html>

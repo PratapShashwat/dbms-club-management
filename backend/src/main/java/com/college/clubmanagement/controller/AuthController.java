@@ -1,83 +1,68 @@
 package com.college.clubmanagement.controller;
-
+import com.college.clubmanagement.entity.ClubMembership;
 import com.college.clubmanagement.entity.Student;
+import com.college.clubmanagement.repository.ClubMembershipRepository;
 import com.college.clubmanagement.repository.StudentRepository;
+import com.college.clubmanagement.service.LoggingService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import java.util.Arrays;
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 public class AuthController {
-    
     private final StudentRepository studentRepository;
+    private final ClubMembershipRepository membershipRepository;
+    private final LoggingService loggingService;
     
-    public AuthController(StudentRepository studentRepository) {
+    public AuthController(StudentRepository studentRepository, ClubMembershipRepository membershipRepository, LoggingService loggingService) {
         this.studentRepository = studentRepository;
+        this.membershipRepository = membershipRepository;
+        this.loggingService = loggingService;
     }
 
-    @GetMapping("/login")
-    public String viewLogin() {
-        return "login";
-    }
-
-    @GetMapping("/register")
-    public String viewRegister(Model model) {
-        List<String> branches = Arrays.asList("CSE", "ECE", "EEE", "Mechanical", "Civil", "Chemical", "Metallurgy", "Mining", "Ceramic", "Pharmaceutics");
-        model.addAttribute("branches", branches);
-        return "register";
-    }
-    
-    @PostMapping("/register")
-    public String doRegister(Student student) {
-        if(student.getPassword() == null || student.getPassword().isEmpty()) {
-            student.setPassword(student.getRollNumber());
-        }
-        studentRepository.save(student);
-        return "redirect:/login?success=Registered";
-    }
+    @GetMapping("/login") public String loginPage() { return "login"; }
+    @GetMapping("/register") public String registerPage() { return "register"; }
+    @GetMapping("/logout") public String logout(HttpSession session) { session.invalidate(); return "redirect:/login"; }
 
     @PostMapping("/login")
-    public String doLogin(@RequestParam String rollNumber, @RequestParam String password, HttpSession session, Model model) {
-        if ("0".equals(rollNumber) && "0".equals(password)) {
-            session.setAttribute("USER_ROLL", "0");
-            session.setAttribute("USER_NAME", "Super Admin");
-            session.setAttribute("IS_SUPER_ADMIN", true);
+    public String loginSubmit(@RequestParam String rollNumber, @RequestParam String password, HttpSession session) {
+        if ("superadmin".equals(rollNumber) && "superadmin".equals(password)) {
+            session.setAttribute("USER_ROLL", "0"); session.setAttribute("USER_NAME", "Super Admin"); session.setAttribute("IS_SUPER_ADMIN", true);
             return "redirect:/";
         }
-        
         Student student = studentRepository.findById(rollNumber).orElse(null);
         if (student != null && student.getPassword() != null && student.getPassword().equals(password)) {
-            session.setAttribute("USER_ROLL", student.getRollNumber());
-            session.setAttribute("USER_NAME", student.getName());
-            session.setAttribute("IS_SUPER_ADMIN", false);
+            session.setAttribute("USER_ROLL", student.getRollNumber()); session.setAttribute("USER_NAME", student.getName());
             return "redirect:/";
-        } else {
-            model.addAttribute("error", "Invalid Roll Number or Password!");
-            return "login";
         }
+        return "redirect:/login?error=InvalidCredentials";
     }
-    
+
     @GetMapping("/profile")
-    public String viewProfile(@RequestParam(required=false) String rollNumber, HttpSession session, Model model) {
-        String loggedInUser = (String) session.getAttribute("USER_ROLL");
-        if(loggedInUser == null) return "redirect:/login";
-
-        String targetRoll = (rollNumber != null) ? rollNumber : loggedInUser;
-        Student student = studentRepository.findById(targetRoll).orElseThrow();
-        model.addAttribute("student", student);
-        model.addAttribute("isSelf", targetRoll.equals(loggedInUser));
-
+    public String viewProfile(HttpSession session, Model model) {
+        String rollNumber = (String) session.getAttribute("USER_ROLL");
+        if (rollNumber == null) return "redirect:/login";
+        model.addAttribute("student", studentRepository.findById(rollNumber).orElseThrow());
+        model.addAttribute("memberships", membershipRepository.findAll().stream().filter(m -> m.getStudent().getRollNumber().equals(rollNumber)).collect(Collectors.toList()));
         return "profile";
     }
 
-    @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
-        return "redirect:/login";
+    @PostMapping("/user/resign")
+    public String resign(@RequestParam Integer membershipId, HttpSession session) {
+        String rollNumber = (String) session.getAttribute("USER_ROLL");
+        ClubMembership cm = membershipRepository.findById(membershipId).orElseThrow();
+        if(!cm.getStudent().getRollNumber().equals(rollNumber)) return "redirect:/profile?error=Unauthorized";
+        if(cm.getRole() != null) {
+            cm.setRole(null); membershipRepository.save(cm);
+            loggingService.log(rollNumber, "Resign POR", "Resigned from POR");
+            return "redirect:/profile?success=Resigned+from+POR";
+        } else {
+            membershipRepository.delete(cm);
+            loggingService.log(rollNumber, "Leave Club", "Left Club " + cm.getClub().getName());
+            return "redirect:/profile?success=Left+Club";
+        }
     }
 }

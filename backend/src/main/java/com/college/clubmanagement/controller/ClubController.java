@@ -1,38 +1,38 @@
 package com.college.clubmanagement.controller;
-
 import com.college.clubmanagement.entity.*;
 import com.college.clubmanagement.repository.*;
+import com.college.clubmanagement.service.LoggingService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Optional;
 
 @Controller
 public class ClubController {
-
     private final ClubRepository clubRepository;
     private final VerticalRepository verticalRepository;
     private final ClubMembershipRepository membershipRepository;
     private final DynamicFormRepository formRepository;
     private final StudentRepository studentRepository;
     private final PorRoleRepository roleRepository;
+    private final ClubRoomAllocationRepository roomAllocationRepository;
+    private final LoggingService loggingService;
 
     public ClubController(ClubRepository clubRepository, VerticalRepository verticalRepository,
                           ClubMembershipRepository membershipRepository, DynamicFormRepository formRepository,
-                          StudentRepository studentRepository, PorRoleRepository roleRepository) {
+                          StudentRepository studentRepository, PorRoleRepository roleRepository,
+                          ClubRoomAllocationRepository roomAllocationRepository, LoggingService loggingService) {
         this.clubRepository = clubRepository;
         this.verticalRepository = verticalRepository;
         this.membershipRepository = membershipRepository;
         this.formRepository = formRepository;
         this.studentRepository = studentRepository;
         this.roleRepository = roleRepository;
+        this.roomAllocationRepository = roomAllocationRepository;
+        this.loggingService = loggingService;
     }
 
     @GetMapping("/club/{id}")
@@ -42,112 +42,83 @@ public class ClubController {
 
         Club club = clubRepository.findById(id).orElseThrow();
         model.addAttribute("club", club);
-
-        model.addAttribute("verticals", verticalRepository.findAll().stream()
-                .filter(v -> v.getClub().getClubId().equals(id)).collect(Collectors.toList()));
-
-        List<DynamicForm> forms = formRepository.findAll().stream()
-                .filter(f -> f.getClub().getClubId().equals(id)).collect(Collectors.toList());
-        model.addAttribute("forms", forms);
         
-        model.addAttribute("clubRoles", roleRepository.findAll().stream()
-                .filter(r -> r.getClub().getClubId().equals(id)).collect(Collectors.toList()));
+        Optional<ClubRoomAllocation> alloc = roomAllocationRepository.findAll().stream().filter(a -> a.getClub().getClubId().equals(id)).findFirst();
+        model.addAttribute("allocatedRoom", alloc.orElse(null));
 
-        List<ClubMembership> allMembers = membershipRepository.findAll().stream()
-                .filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id)).collect(Collectors.toList());
+        model.addAttribute("verticals", verticalRepository.findAll().stream().filter(v -> v.getClub().getClubId().equals(id)).collect(Collectors.toList()));
+        model.addAttribute("forms", formRepository.findAll().stream().filter(f -> f.getClub().getClubId().equals(id)).collect(Collectors.toList()));
+        model.addAttribute("clubRoles", roleRepository.findAll().stream().filter(r -> r.getClub().getClubId().equals(id) && !"GenSec".equalsIgnoreCase(r.getTitle())).collect(Collectors.toList()));
+
+        List<ClubMembership> allMembers = membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id)).collect(Collectors.toList());
         
-        boolean isCouncilGenSec = membershipRepository.findAll().stream()
-                .anyMatch(m -> m.getStudent().getRollNumber().equals(rollNumber) 
-                            && m.getRole() != null 
-                            && "GenSec".equals(m.getRole().getTitle())
-                            && m.getRole().getCouncil().getCouncilId().equals(club.getCouncil().getCouncilId()));
+        boolean isCouncilGenSec = membershipRepository.findAll().stream().anyMatch(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() != null && "GenSec".equals(m.getRole().getTitle()) && m.getRole().getCouncil().getCouncilId().equals(club.getCouncil().getCouncilId()));
+        Boolean isSuperAdmin = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
+        boolean isSuper = (isSuperAdmin != null && isSuperAdmin);
 
         ClubMembership myMembership = allMembers.stream().filter(m -> m.getStudent().getRollNumber().equals(rollNumber)).findFirst().orElse(null);
         
-        boolean isMember = myMembership != null || isCouncilGenSec;
+        boolean isMember = myMembership != null || isCouncilGenSec || isSuper;
         model.addAttribute("isMember", isMember);
 
         if (isMember) {
             model.addAttribute("allMembers", allMembers);
-            
-            boolean canCreateForms = false;
-            boolean canEditMembers = false;
-            boolean canEditPors = false;
-
-            if (isCouncilGenSec) {
-                canCreateForms = true;
-                canEditMembers = true;
-                canEditPors = true;
-            } else if (myMembership != null && myMembership.getRole() != null) {
-                String perms = myMembership.getRole().getPermissionsJson();
-                if (perms != null) {
-                    canCreateForms = perms.contains("CREATE_FORMS");
-                    canEditMembers = perms.contains("MANAGE_MEMBERS");
-                    canEditPors = perms.contains("MANAGE_PORS");
-                }
+            boolean canCreateForms = false, canEditMembers = false, canEditPors = false;
+            if (isCouncilGenSec || isSuper) {
+                canCreateForms = true; canEditMembers = true; canEditPors = true;
+            } else if (myMembership != null && myMembership.getRole() != null && myMembership.getRole().getPermissionsJson() != null) {
+                String p = myMembership.getRole().getPermissionsJson();
+                canCreateForms = p.contains("CREATE_FORMS"); canEditMembers = p.contains("MANAGE_MEMBERS"); canEditPors = p.contains("MANAGE_PORS");
             }
-            
-            model.addAttribute("canCreateForms", canCreateForms);
-            model.addAttribute("canEditMembers", canEditMembers);
-            model.addAttribute("canEditPors", canEditPors);
-            
-            model.addAttribute("myCreatedForms", forms.stream().filter(f -> f.getCreatedBy() != null && f.getCreatedBy().getRollNumber().equals(rollNumber)).collect(Collectors.toList()));
+            model.addAttribute("canCreateForms", canCreateForms); model.addAttribute("canEditMembers", canEditMembers); model.addAttribute("canEditPors", canEditPors);
+            model.addAttribute("myCreatedForms", formRepository.findAll().stream().filter(f -> f.getClub().getClubId().equals(id) && f.getCreatedBy() != null && f.getCreatedBy().getRollNumber().equals(rollNumber)).collect(Collectors.toList()));
         }
-
         return "club";
     }
 
     @PostMapping("/club/{id}/add-member")
-    public String addMember(@PathVariable Integer id, @RequestParam String rollNumber) {
-        Student student = studentRepository.findById(rollNumber).orElseThrow();
-        Club club = clubRepository.findById(id).orElseThrow();
-        
-        boolean exists = membershipRepository.findAll().stream()
-                .anyMatch(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber));
-        if (exists) return "redirect:/club/" + id + "?error=AlreadyMember";
+    public String addMember(@PathVariable Integer id, @RequestParam String rollNumber, HttpSession session) {
+        boolean existsMember = membershipRepository.findAll().stream().anyMatch(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() == null);
+        if (existsMember) return "redirect:/club/" + id + "?error=Already+a+member!";
         
         ClubMembership cm = new ClubMembership();
-        cm.setStudent(student);
-        cm.setClub(club);
+        cm.setStudent(studentRepository.findById(rollNumber).orElseThrow());
+        cm.setClub(clubRepository.findById(id).orElseThrow());
         cm.setAcademicYear("2026-2027");
         membershipRepository.save(cm);
+        loggingService.log(session.getAttribute("USER_ROLL").toString(), "Add Member", rollNumber + " added to Club " + id);
         return "redirect:/club/" + id + "?success=Added";
     }
 
-    @PostMapping("/club/{id}/remove-member")
-    public String removeMember(@PathVariable Integer id, @RequestParam String rollNumber) {
-        membershipRepository.findAll().stream()
-            .filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber))
-            .forEach(m -> membershipRepository.delete(m));
-        return "redirect:/club/" + id + "?success=Removed";
-    }
-    
     @PostMapping("/club/{id}/assign-por")
-    public String assignPor(@PathVariable Integer id, @RequestParam String rollNumber, @RequestParam Integer roleId) {
+    public String assignPor(@PathVariable Integer id, @RequestParam String rollNumber, @RequestParam Integer roleId, HttpSession session) {
         PorRole role = roleRepository.findById(roleId).orElseThrow();
-        Optional<ClubMembership> existing = membershipRepository.findAll().stream()
-            .filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber))
-            .findFirst();
-            
-        if(existing.isEmpty()) {
-            return "redirect:/club/" + id + "?error=StudentNotMemberOfClub";
+        if("GenSec".equalsIgnoreCase(role.getTitle())) return "redirect:/club/" + id + "?error=Cannot+modify+GenSecs+from+Club+View!";
+        
+        boolean hasAnyMembership = membershipRepository.findAll().stream().anyMatch(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber));
+        if(!hasAnyMembership) return "redirect:/club/" + id + "?error=Student+must+be+a+member+first!";
+        
+        ClubMembership emptyMem = membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() == null).findFirst().orElse(null);
+        if(emptyMem != null) {
+            emptyMem.setRole(role); membershipRepository.save(emptyMem);
+        } else {
+            ClubMembership newCm = new ClubMembership();
+            newCm.setStudent(studentRepository.findById(rollNumber).orElseThrow());
+            newCm.setClub(clubRepository.findById(id).orElseThrow());
+            newCm.setRole(role); newCm.setAcademicYear("2026-2027");
+            membershipRepository.save(newCm);
         }
-        ClubMembership cm = existing.get();
-        cm.setRole(role);
-        membershipRepository.save(cm);
+        loggingService.log(session.getAttribute("USER_ROLL").toString(), "Assign POR", rollNumber + " given " + role.getTitle());
         return "redirect:/club/" + id + "?success=PorAssigned";
     }
     
     @PostMapping("/club/{id}/remove-por")
-    public String removePor(@PathVariable Integer id, @RequestParam String rollNumber) {
-        Optional<ClubMembership> existing = membershipRepository.findAll().stream()
-            .filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber))
-            .findFirst();
-        if(existing.isPresent()) {
-            ClubMembership cm = existing.get();
-            cm.setRole(null);
-            membershipRepository.save(cm);
-        }
+    public String removePor(@PathVariable Integer id, @RequestParam String rollNumber, @RequestParam Integer membershipId, HttpSession session) {
+        ClubMembership cm = membershipRepository.findById(membershipId).orElseThrow();
+        if(cm.getRole() != null && "GenSec".equalsIgnoreCase(cm.getRole().getTitle())) return "redirect:/club/" + id + "?error=Cannot+demote+GenSecs!";
+        cm.setRole(null);
+        membershipRepository.save(cm);
+        loggingService.log(session.getAttribute("USER_ROLL").toString(), "Demote POR", rollNumber + " demoted in club " + id);
         return "redirect:/club/" + id + "?success=PorDemoted";
     }
 }

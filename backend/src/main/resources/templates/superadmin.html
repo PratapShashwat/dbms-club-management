@@ -6,30 +6,21 @@
     <div class="container"><a class="navbar-brand" href="#">SuperAdmin Portal</a><a class="nav-link text-white" href="/">Back to Dashboard</a></div>
 </nav>
 <div class="container mt-5">
-    <div th:if="${param.success}" class="alert alert-success">Action completed successfully!</div>
-    <div th:if="${param.error}" class="alert alert-danger" th:text="${param.error}">Error</div>
+    <!-- ERROR TOAST/BOX -->
+    <div th:if="${param.error}" class="alert alert-danger fw-bold shadow-sm" th:text="${param.error}"></div>
+    <div th:if="${param.success}" class="alert alert-success fw-bold shadow-sm" th:text="${param.success}"></div>
     
     <div class="row">
-        <!-- Assign GenSec -->
         <div class="col-md-6 mb-4">
-            <div class="card shadow-sm h-100 border-danger">
+            <div class="card shadow-sm border-danger h-100">
                 <div class="card-header bg-white"><h4 class="text-danger">Assign General Secretary</h4></div>
                 <div class="card-body">
+                    <p class="text-muted small">Student MUST already belong to a club in the Council.</p>
                     <form th:action="@{/admin/assign-gensec}" method="POST">
+                        <div class="mb-3"><input type="text" class="form-control" name="rollNumber" required placeholder="Student Roll No"></div>
                         <div class="mb-3">
-                            <label class="form-label">Student Roll Number</label>
-                            <input type="text" class="form-control" name="rollNumber" required placeholder="e.g. 101">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Select Council</label>
                             <select class="form-select" name="councilId" required>
                                 <option th:each="c : ${councils}" th:value="${c.councilId}" th:text="${c.name}"></option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Assign them to a Club within Council</label>
-                            <select class="form-select" name="clubId" required>
-                                <option th:each="c : ${clubs}" th:value="${c.clubId}" th:text="${c.name}"></option>
                             </select>
                         </div>
                         <button type="submit" class="btn btn-danger w-100">Appoint General Secretary</button>
@@ -37,25 +28,27 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Current GenSecs -->
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header"><h4 class="mb-0">Current General Secretaries</h4></div>
                 <div class="card-body">
                     <ul class="list-group">
                         <li class="list-group-item d-flex justify-content-between align-items-center" th:each="g : ${gensecs}">
-                            <div>
-                                <strong th:text="${g.student.name}">Name</strong> (<span th:text="${g.student.rollNumber}"></span>)<br>
-                                <small th:text="${g.role.council.name} + ' - ' + ${g.club.name}"></small>
-                            </div>
-                            <form th:action="@{/admin/remove-gensec}" method="POST">
-                                <input type="hidden" name="membershipId" th:value="${g.membershipId}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Demote</button>
-                            </form>
+                            <div><strong th:text="${g.student.name}"></strong> (<span th:text="${g.student.rollNumber}"></span>)<br><small th:text="${g.role.council.name} + ' - ' + ${g.club.name}"></small></div>
+                            <form th:action="@{/admin/remove-gensec}" method="POST"><input type="hidden" name="membershipId" th:value="${g.membershipId}"><button type="submit" class="btn btn-sm btn-outline-danger">Demote</button></form>
                         </li>
-                        <li class="list-group-item text-muted" th:if="${gensecs.isEmpty()}">No GenSecs appointed yet.</li>
                     </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white"><h5>System Operation Logs</h5></div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm table-hover">
+                        <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Details</th></tr></thead>
+                        <tbody><tr th:each="l : ${logs}"><td th:text="${l.timestamp}"></td><td th:text="${l.actor}"></td><td th:text="${l.action}"></td><td th:text="${l.details}"></td></tr></tbody>
+                    </table>
                 </div>
             </div>
         </div>

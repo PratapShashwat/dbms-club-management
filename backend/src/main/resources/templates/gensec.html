@@ -1,95 +1,69 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>GenSec Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
+<head><title>GenSec Console</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
 <body class="bg-light">
-<nav class="navbar navbar-dark bg-success">
-    <div class="container">
-        <a class="navbar-brand" href="#">GenSec Workspace</a>
-        <a class="nav-link text-white" href="/">Back to Dashboard</a>
-    </div>
-</nav>
-
+<nav class="navbar navbar-expand-lg navbar-dark bg-success"><div class="container"><a class="navbar-brand" href="#">GenSec Workspace</a><a class="nav-link text-white" href="/">Dashboard</a></div></nav>
 <div class="container mt-4">
-    <div th:if="${param.success}" class="alert alert-success">Action completed successfully!</div>
+    <div th:if="${param.error}" class="alert alert-danger fw-bold shadow-sm" th:text="${param.error}"></div>
+    <div th:if="${param.success}" class="alert alert-success fw-bold shadow-sm" th:text="${param.success}"></div>
 
     <div class="row">
-        <!-- Create POR Template -->
+        <!-- Room Allocations -->
         <div class="col-md-6 mb-4">
-            <div class="card shadow-sm border-success h-100">
-                <div class="card-header bg-white"><h5 class="text-success">Create POR Role Template</h5></div>
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white"><h5 class="mb-0">Council Room Allocations</h5></div>
                 <div class="card-body">
-                    <form th:action="@{/gensec/create-role}" method="POST">
-                        <select class="form-select mb-2" name="clubId" required>
-                            <option th:each="club : ${clubs}" th:value="${club.clubId}" th:text="${club.name}"></option>
-                        </select>
-                        <input type="text" class="form-control mb-2" name="title" placeholder="POR Title (e.g. Design Head)" required>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="canEditMembers" value="true"> Edit Memberships</div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="canEditPors" value="true"> Edit PORs</div>
-                        <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="canFloatForms" value="true"> Float Forms</div>
-                        <button type="submit" class="btn btn-success w-100">Save POR Template</button>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item d-flex justify-content-between" th:each="a : ${allocations}"><span th:text="${a.club.name}"></span><strong th:text="${a.room.buildingName + ' ' + a.room.roomNumber}"></strong></li>
+                    </ul>
+                    <form th:action="@{/gensec/allocate-room}" method="POST">
+                        <div class="d-flex gap-2">
+                            <select class="form-select" name="clubId" required><option th:each="c : ${clubs}" th:value="${c.clubId}" th:text="${c.name}"></option></select>
+                            <select class="form-select" name="roomId" required><option th:each="r : ${rooms}" th:value="${r.roomId}" th:text="${r.buildingName + ' ' + r.roomNumber}"></option></select>
+                            <button type="submit" class="btn btn-secondary">Allocate</button>
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Assign/Remove PORs -->
+        <!-- POR Templates -->
         <div class="col-md-6 mb-4">
-            <div class="card shadow-sm border-success h-100">
-                <div class="card-header bg-white"><h5 class="text-success">Current Club PORs</h5></div>
-                <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-header bg-success text-white"><h5 class="mb-0">Manage POR Templates</h5></div>
+                <div class="card-body">
                     <ul class="list-group mb-3">
-                        <li class="list-group-item d-flex justify-content-between align-items-center" th:each="m : ${memberships}">
-                            <div>
-                                <strong th:text="${m.student.name}"></strong> <br>
-                                <small class="text-muted" th:text="${m.club.name} + ' - ' + ${m.role.title}"></small>
-                            </div>
-                            <form th:action="@{/gensec/remove-por}" method="POST">
-                                <input type="hidden" name="membershipId" th:value="${m.membershipId}">
-                                <button class="btn btn-sm btn-danger">Remove</button>
+                        <li class="list-group-item d-flex justify-content-between align-items-center" th:each="r : ${roles}">
+                            <div><strong th:text="${r.title}"></strong> <small th:text="'(' + ${r.club.name} + ')'"></small></div>
+                            <form th:action="@{/gensec/delete-role}" method="POST" th:if="${r.title != 'GenSec'}">
+                                <input type="hidden" name="roleId" th:value="${r.roleId}">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete & Demote All</button>
                             </form>
                         </li>
                     </ul>
-                    
-                    <h6>Assign New POR</h6>
-                    <form th:action="@{/gensec/assign-por}" method="POST" class="d-flex gap-2">
-                        <input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No" required>
-                        <select class="form-select form-select-sm" name="clubId" required>
-                            <option th:each="club : ${clubs}" th:value="${club.clubId}" th:text="${club.name}"></option>
-                        </select>
-                        <select class="form-select form-select-sm" name="roleId" required>
-                            <option th:each="role : ${roles}" th:value="${role.roleId}" th:text="${role.title}"></option>
-                        </select>
-                        <button class="btn btn-sm btn-success">Assign</button>
+                    <form th:action="@{/gensec/create-role}" method="POST">
+                        <input type="text" class="form-control mb-2" name="title" placeholder="POR Title (e.g. Event Manager)" required>
+                        <select class="form-select mb-2" name="clubId" required><option th:each="c : ${clubs}" th:value="${c.clubId}" th:text="${c.name}"></option></select>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="canEditMembers"><label class="form-check-label">Can Edit Members</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="canEditPors"><label class="form-check-label">Can Assign PORs</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="canFloatForms"><label class="form-check-label">Can Create Forms</label></div>
+                        <button type="submit" class="btn btn-success mt-2 w-100">Create Template</button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Room Allocations -->
+        <!-- All Council POR Holders Display Only -->
         <div class="col-md-12 mb-4">
-            <div class="card shadow-sm border-success">
-                <div class="card-header bg-white"><h5 class="text-success">Room Allocations</h5></div>
+            <div class="card shadow-sm">
+                <div class="card-header"><h5>All Current POR Holders in Council</h5></div>
                 <div class="card-body">
-                    <ul class="list-group mb-3">
-                        <li class="list-group-item" th:each="alloc : ${allocations}" th:text="${alloc.club.name} + ' is allocated Room ' + ${alloc.room.roomId}"></li>
-                    </ul>
-                    <form th:action="@{/gensec/allocate-room}" method="POST" class="d-flex gap-2 w-50">
-                        <select class="form-select" name="clubId" required>
-                            <option th:each="club : ${clubs}" th:value="${club.clubId}" th:text="${club.name}"></option>
-                        </select>
-                        <select class="form-select" name="roomId" required>
-                            <option th:each="room : ${rooms}" th:value="${room.roomId}" th:text="'Room ' + ${room.roomId}"></option>
-                        </select>
-                        <button class="btn btn-success">Allocate</button>
-                    </form>
+                    <table class="table">
+                        <thead><tr><th>Name</th><th>Roll No</th><th>Club</th><th>POR Title</th></tr></thead>
+                        <tbody><tr th:each="m : ${memberships}"><td th:text="${m.student.name}"></td><td th:text="${m.student.rollNumber}"></td><td th:text="${m.club.name}"></td><td><span class="badge bg-primary" th:text="${m.role.title}"></span></td></tr></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
-</div>
-</body>
-</html>
+</div></body></html>
