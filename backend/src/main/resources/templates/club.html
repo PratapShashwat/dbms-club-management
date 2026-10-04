@@ -4,6 +4,10 @@
 
     <link rel="stylesheet" href="/css/styles.css">
 
+
+    <meta name="entity-type" content="club">
+    <meta name="entity-id" th:content="">
+    <meta name="entity-version" th:content="">
 </head>
 
 <body class="bg-light">
@@ -106,4 +110,28 @@
             </div>
         </div>
     </div>
-</div></body></html>
+</div>
+<div id="update-toast" style="display:none; position: fixed; bottom: 20px; left: 20px; background: #000; color: #00ff00; border: 3px solid #00ff00; padding: 15px; font-family: 'Space Mono', monospace; z-index: 100000; box-shadow: 4px 4px 0px #00ff00; cursor: pointer; text-transform: uppercase; font-weight: bold;" onclick="window.location.reload();">
+    ?? Update Available ??<br>Click to refresh
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const entityId = document.querySelector('meta[name="entity-id"]')?.content;
+        const currentVersion = document.querySelector('meta[name="entity-version"]')?.content;
+        
+        if (entityId && currentVersion) {
+            setInterval(() => {
+                fetch('/api/version/club/' + entityId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.version !== undefined && parseInt(data.version) > parseInt(currentVersion)) {
+                            document.getElementById('update-toast').style.display = 'block';
+                        }
+                    })
+                    .catch(e => {}); // Silent catch for network drops
+            }, 5000); // 5 seconds polling
+        }
+    });
+</script>
+</body></html>
