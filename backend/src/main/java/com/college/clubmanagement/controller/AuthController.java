@@ -29,8 +29,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public String loginSubmit(@RequestParam String rollNumber, @RequestParam String password, HttpSession session) {
-        if ("superadmin".equals(rollNumber) && "superadmin".equals(password)) {
-            session.setAttribute("USER_ROLL", "0"); session.setAttribute("USER_NAME", "Super Admin"); session.setAttribute("IS_SUPER_ADMIN", true);
+        if (("superadmin".equals(rollNumber) && "superadmin".equals(password)) || 
+            ("0".equals(rollNumber) && "superadmin".equals(password))) {
+            session.setAttribute("USER_ROLL", "0"); 
+            session.setAttribute("USER_NAME", "Super Admin"); 
+            session.setAttribute("IS_SUPER_ADMIN", true);
             return "redirect:/";
         }
         Student student = studentRepository.findById(rollNumber).orElse(null);
