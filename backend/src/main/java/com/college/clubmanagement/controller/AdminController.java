@@ -88,20 +88,34 @@ public class AdminController {
     }
 
     @PostMapping("/admin/create-por")
-    public String createPor(@RequestParam String title, @RequestParam(required = false) Integer councilId, @RequestParam(required = false) Integer clubId, @RequestParam(required = false) String permissionsJson) {
+    public String createPor(
+            @RequestParam String title, 
+            @RequestParam String entityId, 
+            @RequestParam(required = false) String canEditMembers,
+            @RequestParam(required = false) String canEditPors,
+            @RequestParam(required = false) String canFloatForms,
+            @RequestParam(required = false) String canViewEmail,
+            @RequestParam(required = false) String canViewPhone) {
+        
+        java.util.List<String> perms = new java.util.ArrayList<>();
+        if (canEditMembers != null) perms.add("\"MANAGE_MEMBERS\"");
+        if (canEditPors != null) perms.add("\"MANAGE_PORS\"");
+        if (canFloatForms != null) perms.add("\"CREATE_FORMS\"");
+        if (canViewEmail != null) perms.add("\"VIEW_EMAIL\"");
+        if (canViewPhone != null) perms.add("\"VIEW_PHONE\"");
+        
+        String permissionsJson = "[" + String.join(",", perms) + "]";
+
         PorRole role = new PorRole();
         role.setTitle(title);
-        if (permissionsJson == null || permissionsJson.trim().isEmpty()) {
-            role.setPermissionsJson("[]");
-        } else {
-            role.setPermissionsJson(permissionsJson);
-        }
+        role.setPermissionsJson(permissionsJson);
         
-        if (councilId != null) {
-            role.setCouncil(councilRepository.findById(councilId).orElse(null));
-        }
-        if (clubId != null) {
-            role.setClub(clubRepository.findById(clubId).orElse(null));
+        if (entityId != null && entityId.startsWith("council_")) {
+            Integer cId = Integer.parseInt(entityId.split("_")[1]);
+            role.setCouncil(councilRepository.findById(cId).orElse(null));
+        } else if (entityId != null && entityId.startsWith("club_")) {
+            Integer clId = Integer.parseInt(entityId.split("_")[1]);
+            role.setClub(clubRepository.findById(clId).orElse(null));
         }
         
         roleRepository.save(role);
