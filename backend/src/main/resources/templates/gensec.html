@@ -64,8 +64,8 @@
                 <div class="card-header"><h5>All Current POR Holders in Council</h5></div>
                 <div class="card-body">
                     <table class="table">
-                        <thead><tr><th>Name</th><th>Roll No</th><th>Club</th><th>POR Title</th></tr></thead>
-                        <tbody><tr th:each="m : ${memberships}"><td th:text="${m.student.name}"></td><td th:text="${m.student.rollNumber}"></td><td th:text="${m.club.name}"></td><td><span class="badge bg-success" th:text="${m.role.title}"></span></td></tr></tbody>
+                        <thead><tr><th>Name</th><th>Roll No</th><th>Email</th><th>Phone</th><th>Club</th><th>POR Title</th></tr></thead>
+                        <tbody><tr th:each="m : ${memberships}"><td th:text="${m.student.name}"></td><td th:text="${m.student.rollNumber}"></td><td th:text="${m.student.email}"></td><td th:text="${m.student.phoneNumber}"></td><td th:text="${m.club.name}"></td><td><span class="badge bg-success" th:text="${m.role.title}"></span></td></tr></tbody>
                     </table>
                 </div>
             </div>

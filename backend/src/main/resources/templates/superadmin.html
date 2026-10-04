@@ -39,7 +39,7 @@
                 <div class="card-body">
                     <ul class="list-group">
                         <li class="list-group-item d-flex justify-content-between align-items-center" th:each="g : ${gensecs}">
-                            <div><strong th:text="${g.student.name}"></strong> (<span th:text="${g.student.rollNumber}"></span>)<br><small th:text="${g.role.council.name} + ' - ' + ${g.club.name}"></small></div>
+                            <div><strong th:text="${g.student.name}"></strong> (<span th:text="${g.student.rollNumber}"></span>)<br><small th:text="${g.student.email} + ' | ' + ${g.student.phoneNumber}"></small><br><small th:text="${g.role.council.name} + ' - ' + ${g.club.name}"></small></div>
                             <form th:action="@{/admin/remove-gensec}" method="POST"><input type="hidden" name="membershipId" th:value="${g.membershipId}"><button type="submit" class="btn btn-sm btn-outline-danger">Demote</button></form>
                         </li>
                     </ul>

@@ -41,10 +41,10 @@
                 <div class="card-header bg-info text-white"><h5>Member Portal: Club Directory</h5></div>
                 <div class="card-body">
                     <table class="table table-sm">
-                        <thead><tr><th>Name</th><th>Roll No</th><th>Vertical</th><th>POR</th><th th:if="${canEditMembers or canEditPors}">Actions</th></tr></thead>
+                        <thead><tr><th>Name</th><th>Roll No</th><th>Email</th><th>Phone</th><th>Vertical</th><th>POR</th><th th:if="${canEditMembers or canEditPors}">Actions</th></tr></thead>
                         <tbody>
                             <tr th:each="m : ${allMembers}">
-                                <td th:text="${m.student.name}"></td><td th:text="${m.student.rollNumber}"></td><td th:text="${m.vertical != null ? m.vertical.name : 'None'}"></td>
+                                <td th:text="${m.student.name}"></td><td th:text="${m.student.rollNumber}"></td><td th:text="${m.student.email}"></td><td th:text="${m.student.phoneNumber}"></td><td th:text="${m.vertical != null ? m.vertical.name : 'None'}"></td>
                                 <td>
                                     <span class="badge bg-secondary" th:if="${m.role != null}" th:text="${m.role.title}"></span>
                                     <span class="badge bg-light text-dark" th:if="${m.role == null}">Member</span>
