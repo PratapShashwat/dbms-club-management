@@ -103,17 +103,4 @@ body {
 .bg-success { background: #00ff00 !important; }
 .bg-secondary { background: #c0c0c0 !important; }
 
-/* Bottom Spinner Override */
-#bottom-spinner {
-    border: 3px solid #000 !important;
-    border-radius: 50px !important;
-    background: #00ff00 !important;
-    color: #000 !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
-    text-transform: uppercase;
-    font-family: 'Space Mono', monospace;
-}
-.spin-icon {
-    border: 3px solid #000 !important;
-    border-top-color: transparent !important;
-}
+
