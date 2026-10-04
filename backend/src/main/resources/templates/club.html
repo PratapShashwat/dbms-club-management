@@ -78,7 +78,7 @@
                             <form th:action="@{/club/{id}/create-form(id=${club.clubId})}" method="POST">
                                 <input type="text" class="form-control form-control-sm mb-2" name="title" placeholder="Title" required>
                                 <input type="text" class="form-control form-control-sm mb-2" name="formType" placeholder="Type" required>
-                                <select class="form-select form-select-sm mb-2" name="targetAudience" required><option value="ALL">All Students</option><option value="THIS_CLUB">Club Members</option></select>
+                                <select class="form-select form-select-sm mb-2" name="targetAudience" required><option value="ALL">All Students</option><option value="THIS_CLUB">Club Members</option><option value="POR_ONLY">POR Holders Only</option></select>
                                 <textarea class="form-control form-control-sm mb-2" name="questionsJson" placeholder='["Question 1?"]' required></textarea>
                                 <button type="submit" class="btn btn-sm btn-warning w-100">Publish Form</button>
                             </form>
