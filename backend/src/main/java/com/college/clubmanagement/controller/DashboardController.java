@@ -41,7 +41,7 @@ public class DashboardController {
         model.addAttribute("userName", session.getAttribute("USER_NAME"));
 
         boolean isGenSec = clubMembershipRepository.findAll().stream()
-                .anyMatch(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getClub() == null && m.getRole() != null);
+                .anyMatch(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() != null && "GenSec".equals(m.getRole().getTitle()));
         model.addAttribute("isGenSec", isGenSec);
 
         // Fetch all Councils to display the 'Explore' hierarchy
