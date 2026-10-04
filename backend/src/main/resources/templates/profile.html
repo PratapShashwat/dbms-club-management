@@ -18,7 +18,7 @@
         <div class="card-body">
             <ul class="list-group">
                 <li class="list-group-item d-flex justify-content-between align-items-center" th:each="m : ${memberships}">
-                    <div><strong th:text="${m.club.name}"></strong> <span class="badge bg-primary" th:if="${m.role != null}" th:text="${m.role.title}"></span><span class="badge bg-secondary" th:if="${m.role == null}">Member</span></div>
+                    <div><strong th:text="${m.club.name}"></strong> <span class="badge bg-success" th:if="${m.role != null}" th:text="${m.role.title}"></span><span class="badge bg-secondary" th:if="${m.role == null}">Member</span></div>
                     <form th:action="@{/user/resign}" method="POST" th:if="${m.role == null or m.role.title != 'GenSec'}">
                         <input type="hidden" name="membershipId" th:value="${m.membershipId}">
                         <button type="submit" class="btn btn-sm btn-outline-danger" th:text="${m.role != null ? 'Resign POR' : 'Leave Club'}"></button>

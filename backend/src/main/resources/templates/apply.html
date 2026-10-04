@@ -7,7 +7,7 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
     <div class="container">
         <a class="navbar-brand" href="/">Club Management System</a>
         <div class="collapse navbar-collapse">
@@ -25,7 +25,7 @@
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h4 class="mb-0">Application Form: <span th:text="${club.name}" class="text-primary"></span></h4>
+                    <h4 class="mb-0">Application Form: <span th:text="${club.name}" class="text-success"></span></h4>
                 </div>
                 <div class="card-body">
                     <form th:action="@{/apply/{id}(id=${club.clubId})}" method="POST">
@@ -52,7 +52,7 @@
                             <textarea class="form-control" id="statementOfPurpose" name="statementOfPurpose" rows="4" required placeholder="Why do you want to join this club?"></textarea>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary w-100">Submit Application</button>
+                        <button type="submit" class="btn btn-success w-100">Submit Application</button>
                     </form>
                 </div>
             </div>

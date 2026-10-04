@@ -36,14 +36,14 @@
             <a href="/gensec" class="btn btn-sm btn-success ms-3">Go to GenSec Console</a>
         </div>
         <!-- Section 1: My Clubs -->
-    <h3 class="mb-3 text-primary border-bottom pb-2">My Clubs & Memberships</h3>
+    <h3 class="mb-3 text-success border-bottom pb-2">My Clubs & Memberships</h3>
     <div class="row mb-5">
         <div class="col-md-4 mb-3" th:each="club : ${myClubs}">
-            <div class="card h-100 shadow-sm border-primary">
+            <div class="card h-100 shadow-sm border-success">
                 <div class="card-body">
-                    <h5 class="card-title text-primary" th:text="${club.name}">Club Name</h5>
+                    <h5 class="card-title text-success" th:text="${club.name}">Club Name</h5>
                     <p class="text-muted mb-2">You are a member here.</p>
-                    <a th:href="@{/club/{id}(id=${club.clubId})}" class="btn btn-outline-primary btn-sm">Enter Club Workspace</a>
+                    <a th:href="@{/club/{id}(id=${club.clubId})}" class="btn btn-outline-success btn-sm">Enter Club Workspace</a>
                 </div>
             </div>
         </div>

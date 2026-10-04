@@ -9,7 +9,7 @@
 
 <div class="container mt-5">
     <div class="card shadow-sm mx-auto" style="max-width: 600px;">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-success text-white">
             <h3 th:text="${form.title}">Form Title</h3>
             <p class="mb-0" th:text="'Target: ' + ${form.targetAudience} + ' | Type: ' + ${form.formType}"></p>
         </div>
@@ -32,7 +32,7 @@
                     <textarea class="form-control" name="answersJson" rows="5" required placeholder='e.g. {"Why join?": "I love coding", "Experience": "None"}'></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100">Submit Application</button>
+                <button type="submit" class="btn btn-success w-100">Submit Application</button>
             </form>
         </div>
     </div>
