@@ -1,4 +1,9 @@
-package com.college.clubmanagement.controller;
+import os
+
+base_dir = r"backend\src\main\java\com\college\clubmanagement\controller"
+club_path = os.path.join(base_dir, "ClubController.java")
+
+club_code = """package com.college.clubmanagement.controller;
 
 import com.college.clubmanagement.entity.*;
 import com.college.clubmanagement.repository.*;
@@ -120,3 +125,8 @@ public class ClubController {
         return "redirect:/club/" + id + "?success=Removed";
     }
 }
+"""
+
+with open(club_path, 'w') as f:
+    f.write(club_code)
+print("ClubController patched successfully for GenSec cascading powers and StudentRepo injection.")
