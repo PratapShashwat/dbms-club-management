@@ -1,0 +1,118 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+body {
+    font-family: 'Space Mono', monospace;
+    background-color: #c0c0c0;
+    background-image: 
+        linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent), 
+        linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent);
+    background-size: 50px 50px;
+    color: #000000;
+}
+
+/* Y2K Neobrutalist Cards */
+.card {
+    background: #ffffff;
+    border: 3px solid #000000 !important;
+    border-radius: 0 !important;
+    box-shadow: 6px 6px 0px #ff00ff; /* Neon pink shadow */
+    margin-bottom: 2rem;
+}
+
+.card-header {
+    background: #00ff00 !important; /* Neon green */
+    border-bottom: 3px solid #000000 !important;
+    font-weight: bold;
+    color: #000 !important;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Navbar */
+.navbar {
+    background: #000080 !important; /* Cyber blue */
+    border-bottom: 4px solid #000000;
+}
+.navbar-brand, .nav-link {
+    color: #ffffff !important;
+    font-weight: bold;
+    text-shadow: 2px 2px 0px #ff00ff;
+    text-transform: uppercase;
+}
+
+/* Buttons */
+.btn {
+    border: 3px solid #000000 !important;
+    border-radius: 0 !important;
+    font-weight: bold;
+    text-transform: uppercase;
+    box-shadow: 4px 4px 0px #000000;
+    transition: all 0.1s;
+    letter-spacing: 1px;
+}
+
+.btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #000000;
+}
+
+.btn-success { background-color: #00ff00 !important; color: #000 !important; }
+.btn-primary { background-color: #00ffff !important; color: #000 !important; }
+.btn-danger { background-color: #ff0000 !important; color: #fff !important; }
+.btn-warning { background-color: #ffff00 !important; color: #000 !important; }
+.btn-dark { background-color: #000000 !important; color: #00ff00 !important; }
+
+/* Forms */
+.form-control, .form-select {
+    border: 3px solid #000 !important;
+    border-radius: 0 !important;
+    background: #fff;
+    box-shadow: inset 4px 4px 0px rgba(0,0,0,0.1);
+}
+.form-control:focus, .form-select:focus {
+    outline: none;
+    box-shadow: 4px 4px 0px #00ffff;
+    border-color: #000 !important;
+}
+
+/* Tables */
+.table {
+    border: 3px solid #000;
+    background: #fff;
+}
+.table th {
+    background: #c0c0c0;
+    border-bottom: 3px solid #000 !important;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.table td, .table th {
+    border: 1px solid #000;
+}
+
+/* Badges */
+.badge {
+    border-radius: 0 !important;
+    border: 2px solid #000;
+    box-shadow: 2px 2px 0px #000;
+    color: #000 !important;
+    text-transform: uppercase;
+}
+.bg-success { background: #00ff00 !important; }
+.bg-secondary { background: #c0c0c0 !important; }
+
+/* Bottom Spinner Override */
+#bottom-spinner {
+    border: 3px solid #000 !important;
+    border-radius: 0 !important;
+    background: #ffff00 !important;
+    color: #000 !important;
+    box-shadow: 6px 6px 0px #00ffff !important;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+}
+.spin-icon {
+    border: 3px solid #000 !important;
+    border-top-color: transparent !important;
+}
