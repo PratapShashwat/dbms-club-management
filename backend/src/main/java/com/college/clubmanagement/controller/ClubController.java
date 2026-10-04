@@ -53,7 +53,7 @@ public class ClubController {
 
         List<ClubMembership> allMembers = membershipRepository.findByClub_ClubId(id);
         
-        boolean isCouncilGenSec = membershipRepository.findAll().stream().anyMatch(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() != null && "GenSec".equals(m.getRole().getTitle()) && m.getRole().getCouncil().getCouncilId().equals(club.getCouncil().getCouncilId()));
+        boolean isCouncilGenSec = membershipRepository.findByStudentRollNumberEager(rollNumber).stream().anyMatch(m -> m.getRole() != null && "GenSec".equals(m.getRole().getTitle()) && m.getRole().getCouncil() != null && m.getRole().getCouncil().getCouncilId().equals(club.getCouncil().getCouncilId()));
         Boolean isSuperAdmin = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
         boolean isSuper = (isSuperAdmin != null && isSuperAdmin);
 

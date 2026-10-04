@@ -40,6 +40,8 @@ public class AdminController {
         model.addAttribute("gensecs", membershipRepository.findAll().stream()
                 .filter(m -> m.getRole() != null && "GenSec".equals(m.getRole().getTitle())).collect(Collectors.toList()));
         model.addAttribute("logs", logRepository.findAll().stream().sorted((a,b)->b.getTimestamp().compareTo(a.getTimestamp())).limit(50).collect(Collectors.toList()));
+        model.addAttribute("allRoles", roleRepository.findAll());
+        model.addAttribute("allClubs", clubRepository.findAll());
         return "superadmin";
     }
 
@@ -83,5 +85,44 @@ public class AdminController {
         membershipRepository.save(cm);
         loggingService.log("SuperAdmin", "Remove GenSec", name + " demoted from GenSec");
         return "redirect:/superadmin?success=GenSecRemoved";
+    }
+
+    @PostMapping("/admin/create-por")
+    public String createPor(@RequestParam String title, @RequestParam(required = false) Integer councilId, @RequestParam(required = false) Integer clubId, @RequestParam(required = false) String permissionsJson) {
+        PorRole role = new PorRole();
+        role.setTitle(title);
+        if (permissionsJson == null || permissionsJson.trim().isEmpty()) {
+            role.setPermissionsJson("[]");
+        } else {
+            role.setPermissionsJson(permissionsJson);
+        }
+        
+        if (councilId != null) {
+            role.setCouncil(councilRepository.findById(councilId).orElse(null));
+        }
+        if (clubId != null) {
+            role.setClub(clubRepository.findById(clubId).orElse(null));
+        }
+        
+        roleRepository.save(role);
+        loggingService.log("SuperAdmin", "Create POR", "Created new POR: " + title);
+        return "redirect:/superadmin?success=POR+Created";
+    }
+
+    @PostMapping("/admin/delete-por")
+    public String deletePor(@RequestParam Integer roleId) {
+        PorRole role = roleRepository.findById(roleId).orElseThrow();
+        if ("GenSec".equalsIgnoreCase(role.getTitle())) {
+            return "redirect:/superadmin?error=Cannot+delete+GenSec+role+directly!";
+        }
+        
+        membershipRepository.findByRole_RoleId(roleId).forEach(m -> {
+            m.setRole(null);
+            membershipRepository.save(m);
+        });
+        
+        roleRepository.delete(role);
+        loggingService.log("SuperAdmin", "Delete POR", "Deleted POR: " + role.getTitle());
+        return "redirect:/superadmin?success=POR+Deleted";
     }
 }
