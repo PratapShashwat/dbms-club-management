@@ -41,6 +41,9 @@ public class CouncilController {
         String rollNumber = (String) session.getAttribute("USER_ROLL");
         if (rollNumber == null) return "redirect:/login";
 
+        Boolean isSuperAdmin = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
+        boolean isSuper = (isSuperAdmin != null && isSuperAdmin);
+
         Integer councilId = null;
         for (ClubMembership m : membershipRepository.findAll()) {
             if (m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() != null && "GenSec".equalsIgnoreCase(m.getRole().getTitle())) {
@@ -48,14 +51,23 @@ public class CouncilController {
                 break;
             }
         }
-        if (councilId == null) return "redirect:/?error=NotGenSec";
-        final Integer cid = councilId;
+        if (councilId == null && !isSuper) return "redirect:/?error=NotGenSec";
         
-        model.addAttribute("roles", roleRepository.findAll().stream().filter(r -> r.getCouncil().getCouncilId().equals(cid) && r.getClub() != null).collect(Collectors.toList()));
-        model.addAttribute("memberships", membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getClub().getCouncil().getCouncilId().equals(cid) && m.getRole() != null).collect(Collectors.toList()));
-        model.addAttribute("clubs", clubRepository.findAll().stream().filter(c -> c.getCouncil().getCouncilId().equals(cid)).collect(Collectors.toList()));
-        model.addAttribute("rooms", roomRepository.findAll());
-        model.addAttribute("allocations", roomAllocationRepository.findAll().stream().filter(a -> a.getClub().getCouncil().getCouncilId().equals(cid)).collect(Collectors.toList()));
+        if (isSuper) {
+            model.addAttribute("roles", roleRepository.findAll().stream().filter(r -> r.getClub() != null).collect(Collectors.toList()));
+            model.addAttribute("memberships", membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getRole() != null).collect(Collectors.toList()));
+            model.addAttribute("clubs", clubRepository.findAll());
+            model.addAttribute("rooms", roomRepository.findAll());
+            model.addAttribute("allocations", roomAllocationRepository.findAll());
+            model.addAttribute("isSuperAdmin", true);
+        } else {
+            final Integer cid = councilId;
+            model.addAttribute("roles", roleRepository.findAll().stream().filter(r -> r.getCouncil().getCouncilId().equals(cid) && r.getClub() != null).collect(Collectors.toList()));
+            model.addAttribute("memberships", membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getClub().getCouncil().getCouncilId().equals(cid) && m.getRole() != null).collect(Collectors.toList()));
+            model.addAttribute("clubs", clubRepository.findAll().stream().filter(c -> c.getCouncil().getCouncilId().equals(cid)).collect(Collectors.toList()));
+            model.addAttribute("rooms", roomRepository.findAll());
+            model.addAttribute("allocations", roomAllocationRepository.findAll().stream().filter(a -> a.getClub().getCouncil().getCouncilId().equals(cid)).collect(Collectors.toList()));
+        }
 
         return "gensec";
     }

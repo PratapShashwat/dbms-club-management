@@ -32,7 +32,7 @@
                 <div class="card-header bg-info text-white"><h5>Member Portal: Club Directory</h5></div>
                 <div class="card-body">
                     <table class="table table-sm">
-                        <thead><tr><th>Name</th><th>Roll No</th><th>Vertical</th><th>POR</th><th th:if="${canEditPors}">Demote</th></tr></thead>
+                        <thead><tr><th>Name</th><th>Roll No</th><th>Vertical</th><th>POR</th><th th:if="${canEditMembers or canEditPors}">Actions</th></tr></thead>
                         <tbody>
                             <tr th:each="m : ${allMembers}">
                                 <td th:text="${m.student.name}"></td><td th:text="${m.student.rollNumber}"></td><td th:text="${m.vertical != null ? m.vertical.name : 'None'}"></td>
@@ -40,12 +40,19 @@
                                     <span class="badge bg-secondary" th:if="${m.role != null}" th:text="${m.role.title}"></span>
                                     <span class="badge bg-light text-dark" th:if="${m.role == null}">Member</span>
                                 </td>
-                                <td th:if="${canEditPors}">
-                                    <form th:if="${m.role != null and m.role.title != 'GenSec'}" th:action="@{/club/{id}/remove-por(id=${club.clubId})}" method="POST">
-                                        <input type="hidden" name="rollNumber" th:value="${m.student.rollNumber}">
-                                        <input type="hidden" name="membershipId" th:value="${m.membershipId}">
-                                        <button class="btn btn-sm btn-danger">Demote</button>
-                                    </form>
+                                <td th:if="${canEditMembers or canEditPors}">
+                                    <div class="d-flex gap-2">
+                                        <form th:if="${canEditPors and m.role != null and m.role.title != 'GenSec'}" th:action="@{/club/{id}/remove-por(id=${club.clubId})}" method="POST">
+                                            <input type="hidden" name="rollNumber" th:value="${m.student.rollNumber}">
+                                            <input type="hidden" name="membershipId" th:value="${m.membershipId}">
+                                            <button class="btn btn-sm btn-warning">Demote POR</button>
+                                        </form>
+                                        <form th:if="${canEditMembers}" th:action="@{/club/{id}/remove-member(id=${club.clubId})}" method="POST">
+                                            <input type="hidden" name="rollNumber" th:value="${m.student.rollNumber}">
+                                            <input type="hidden" name="membershipId" th:value="${m.membershipId}">
+                                            <button class="btn btn-sm btn-danger" th:text="${m.role == null ? 'Kick Member' : 'Kick & Demote'}"></button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>

@@ -132,4 +132,13 @@ public class ClubController {
         loggingService.log(session.getAttribute("USER_ROLL").toString(), "Demote POR", rollNumber + " demoted in club " + id);
         return "redirect:/club/" + id + "?success=PorDemoted";
     }
+
+    @PostMapping("/club/{id}/remove-member")
+    public String removeMember(@PathVariable Integer id, @RequestParam String rollNumber, @RequestParam Integer membershipId, HttpSession session) {
+        ClubMembership cm = membershipRepository.findById(membershipId).orElseThrow();
+        if(cm.getRole() != null && "GenSec".equalsIgnoreCase(cm.getRole().getTitle())) return "redirect:/club/" + id + "?error=Cannot+kick+GenSecs!";
+        membershipRepository.delete(cm);
+        loggingService.log(session.getAttribute("USER_ROLL").toString(), "Kick Member", rollNumber + " removed from club " + id);
+        return "redirect:/club/" + id + "?success=MemberKicked";
+    }
 }
