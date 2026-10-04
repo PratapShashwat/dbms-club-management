@@ -41,22 +41,20 @@
             }
             
             forms.forEach(function(form) {
-                form.addEventListener('submit', showSpinner);
-            });
-            
-            buttons.forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    if (btn.tagName.toLowerCase() === 'a' || btn.closest('form')) {
-                        showSpinner();
-                    }
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    showSpinner();
+                    setTimeout(() => form.submit(), 400); // Artificial delay to ensure visibility
                 });
             });
             
-            // Also show spinner when clicking links that aren't #
             document.querySelectorAll('a').forEach(function(a) {
                 a.addEventListener('click', function(e) {
-                    if (a.getAttribute('href') && !a.getAttribute('href').startsWith('#')) {
+                    let href = a.getAttribute('href');
+                    if (href && !href.startsWith('#') && !a.hasAttribute('download')) {
+                        e.preventDefault();
                         showSpinner();
+                        setTimeout(() => window.location.href = href, 400); // Artificial delay
                     }
                 });
             });
