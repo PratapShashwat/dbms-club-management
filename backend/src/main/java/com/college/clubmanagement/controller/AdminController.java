@@ -68,7 +68,7 @@ public class AdminController {
                     newRole.setTitle("GenSec");
                     newRole.setCouncil(council);
                     newRole.setClub(club);
-                    newRole.setPermissionsJson("[\"MANAGE_MEMBERS\",\"MANAGE_PORS\",\"CREATE_FORMS\",\"VIEW_EMAIL\",\"VIEW_PHONE\"]");
+                    newRole.setPermissionsJson("[\"MANAGE_MEMBERS\",\"MANAGE_PORS\",\"CREATE_FORMS\"]");
                     return roleRepository.save(newRole);
                 });
         cm.setRole(role);
@@ -93,16 +93,13 @@ public class AdminController {
             @RequestParam String entityId, 
             @RequestParam(required = false) String canEditMembers,
             @RequestParam(required = false) String canEditPors,
-            @RequestParam(required = false) String canFloatForms,
-            @RequestParam(required = false) String canViewEmail,
-            @RequestParam(required = false) String canViewPhone) {
+            @RequestParam(required = false) String canFloatForms) {
         
         java.util.List<String> perms = new java.util.ArrayList<>();
         if (canEditMembers != null) perms.add("\"MANAGE_MEMBERS\"");
         if (canEditPors != null) perms.add("\"MANAGE_PORS\"");
         if (canFloatForms != null) perms.add("\"CREATE_FORMS\"");
-        if (canViewEmail != null) perms.add("\"VIEW_EMAIL\"");
-        if (canViewPhone != null) perms.add("\"VIEW_PHONE\"");
+        
         
         String permissionsJson = "[" + String.join(",", perms) + "]";
 
