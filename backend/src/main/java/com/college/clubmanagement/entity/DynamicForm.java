@@ -1,11 +1,18 @@
 package com.college.clubmanagement.entity;
 import jakarta.persistence.*;
+import jakarta.persistence.Version;
 import lombok.Data;
 
 @Data
 @Entity
 @Table(name = "Dynamic_Form")
 public class DynamicForm {
+
+    @Version
+    @Column(name = "opt_version")
+    private Long optVersion = 0L;
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "Form_ID")
@@ -30,4 +37,8 @@ public class DynamicForm {
     @ManyToOne
     @JoinColumn(name = "Created_By")
     private Student createdBy;
+
+    public Long getOptVersion() { return optVersion; }
+    public void setOptVersion(Long optVersion) { this.optVersion = optVersion; }
+
 }

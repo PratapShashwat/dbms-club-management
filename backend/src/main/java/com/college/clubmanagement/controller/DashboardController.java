@@ -40,8 +40,9 @@ public class DashboardController {
         model.addAttribute("isSuperAdmin", isSuperAdmin != null && isSuperAdmin);
         model.addAttribute("userName", session.getAttribute("USER_NAME"));
 
-        boolean isGenSec = clubMembershipRepository.findAll().stream()
-                .anyMatch(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() != null && "GenSec".equals(m.getRole().getTitle()));
+        var memberships = clubMembershipRepository.findByStudentRollNumberEager(rollNumber);
+        boolean isGenSec = memberships.stream()
+                .anyMatch(m -> m.getRole() != null && "GenSec".equals(m.getRole().getTitle()));
         model.addAttribute("isGenSec", isGenSec);
 
         // Fetch all Councils to display the 'Explore' hierarchy
@@ -52,8 +53,7 @@ public class DashboardController {
         model.addAttribute("allClubs", allClubs);
 
         // Fetch clubs the user is a part of
-        List<Club> myClubs = clubMembershipRepository.findAll().stream()
-                .filter(m -> m.getStudent().getRollNumber().equals(rollNumber))
+        List<Club> myClubs = memberships.stream()
                 .map(m -> m.getClub())
                 .filter(c -> c != null)
                 .collect(Collectors.toList());

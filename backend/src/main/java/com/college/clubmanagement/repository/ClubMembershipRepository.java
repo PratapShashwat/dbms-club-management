@@ -6,4 +6,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ClubMembershipRepository extends JpaRepository<ClubMembership, Integer> {
+    @org.springframework.data.jpa.repository.Query("SELECT m FROM ClubMembership m JOIN FETCH m.club LEFT JOIN FETCH m.role WHERE m.student.rollNumber = :rollNumber")
+    java.util.List<ClubMembership> findByStudentRollNumberEager(@org.springframework.data.repository.query.Param("rollNumber") String rollNumber);
+
 }
