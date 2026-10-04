@@ -47,7 +47,7 @@ public class ClubController {
         model.addAttribute("allocatedRoom", alloc.orElse(null));
 
         model.addAttribute("verticals", verticalRepository.findAll().stream().filter(v -> v.getClub().getClubId().equals(id)).collect(Collectors.toList()));
-        model.addAttribute("forms", formRepository.findAll().stream().filter(f -> f.getClub().getClubId().equals(id)).collect(Collectors.toList()));
+        List<DynamicForm> allForms = formRepository.findAll().stream().filter(f -> f.getClub().getClubId().equals(id)).collect(Collectors.toList());
         model.addAttribute("clubRoles", roleRepository.findAll().stream().filter(r -> r.getClub().getClubId().equals(id) && !"GenSec".equalsIgnoreCase(r.getTitle())).collect(Collectors.toList()));
 
         List<ClubMembership> allMembers = membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id)).collect(Collectors.toList());
@@ -73,6 +73,17 @@ public class ClubController {
             model.addAttribute("canCreateForms", canCreateForms); model.addAttribute("canEditMembers", canEditMembers); model.addAttribute("canEditPors", canEditPors);
             model.addAttribute("myCreatedForms", formRepository.findAll().stream().filter(f -> f.getClub().getClubId().equals(id) && f.getCreatedBy() != null && f.getCreatedBy().getRollNumber().equals(rollNumber)).collect(Collectors.toList()));
         }
+        
+        List<DynamicForm> visibleForms = allForms.stream().filter(f -> {
+            if ("ALL".equals(f.getTargetAudience())) return true;
+            if ("THIS_CLUB".equals(f.getTargetAudience())) return isMember;
+            if ("PORS_ONLY".equals(f.getTargetAudience())) {
+                return isSuper || isCouncilGenSec || (myMembership != null && myMembership.getRole() != null);
+            }
+            return false;
+        }).collect(Collectors.toList());
+        model.addAttribute("forms", visibleForms);
+
         return "club";
     }
 
