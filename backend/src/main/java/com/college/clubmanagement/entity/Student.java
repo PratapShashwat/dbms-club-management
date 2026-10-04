@@ -27,4 +27,7 @@ public class Student {
     
     @Column(name = "Phone_Number", length = 15)
     private String phoneNumber;
+    
+    @Column(name = "Password", length = 100)
+    private String password;
 }

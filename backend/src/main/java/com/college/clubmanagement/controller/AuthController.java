@@ -8,6 +8,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import java.util.Arrays;
+import java.util.List;
 
 @Controller
 public class AuthController {
@@ -24,19 +26,24 @@ public class AuthController {
     }
 
     @GetMapping("/register")
-    public String viewRegister() {
+    public String viewRegister(Model model) {
+        List<String> branches = Arrays.asList("CSE", "ECE", "EEE", "Mechanical", "Civil", "Chemical", "Metallurgy", "Mining", "Ceramic", "Pharmaceutics");
+        model.addAttribute("branches", branches);
         return "register";
     }
     
     @PostMapping("/register")
     public String doRegister(Student student) {
+        if(student.getPassword() == null || student.getPassword().isEmpty()) {
+            student.setPassword(student.getRollNumber());
+        }
         studentRepository.save(student);
         return "redirect:/login?success=Registered";
     }
 
     @PostMapping("/login")
-    public String doLogin(@RequestParam String rollNumber, HttpSession session, Model model) {
-        if ("0".equals(rollNumber)) {
+    public String doLogin(@RequestParam String rollNumber, @RequestParam String password, HttpSession session, Model model) {
+        if ("0".equals(rollNumber) && "0".equals(password)) {
             session.setAttribute("USER_ROLL", "0");
             session.setAttribute("USER_NAME", "Super Admin");
             session.setAttribute("IS_SUPER_ADMIN", true);
@@ -44,13 +51,13 @@ public class AuthController {
         }
         
         Student student = studentRepository.findById(rollNumber).orElse(null);
-        if (student != null) {
+        if (student != null && student.getPassword() != null && student.getPassword().equals(password)) {
             session.setAttribute("USER_ROLL", student.getRollNumber());
             session.setAttribute("USER_NAME", student.getName());
             session.setAttribute("IS_SUPER_ADMIN", false);
             return "redirect:/";
         } else {
-            model.addAttribute("error", "Roll Number not found! Please register first.");
+            model.addAttribute("error", "Invalid Roll Number or Password!");
             return "login";
         }
     }
@@ -63,9 +70,6 @@ public class AuthController {
         String targetRoll = (rollNumber != null) ? rollNumber : loggedInUser;
         Student student = studentRepository.findById(targetRoll).orElseThrow();
         model.addAttribute("student", student);
-        
-        // In a real system, you'd pull the viewer's highest POR and check Privacy JSON
-        // For simplicity in UI, we pass it down and thymeleaf will conditionally hide
         model.addAttribute("isSelf", targetRoll.equals(loggedInUser));
 
         return "profile";

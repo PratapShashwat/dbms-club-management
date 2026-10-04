@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Controller
 public class CouncilController {
@@ -19,16 +20,19 @@ public class CouncilController {
     private final StudentRepository studentRepository;
     private final RoomRepository roomRepository;
     private final ClubRoomAllocationRepository roomAllocationRepository;
+    private final CouncilRepository councilRepository;
 
     public CouncilController(ClubRepository clubRepository, PorRoleRepository roleRepository,
                            ClubMembershipRepository membershipRepository, StudentRepository studentRepository,
-                           RoomRepository roomRepository, ClubRoomAllocationRepository roomAllocationRepository) {
+                           RoomRepository roomRepository, ClubRoomAllocationRepository roomAllocationRepository,
+                           CouncilRepository councilRepository) {
         this.clubRepository = clubRepository;
         this.roleRepository = roleRepository;
         this.membershipRepository = membershipRepository;
         this.studentRepository = studentRepository;
         this.roomRepository = roomRepository;
         this.roomAllocationRepository = roomAllocationRepository;
+        this.councilRepository = councilRepository;
     }
 
     @GetMapping("/gensec")
@@ -38,7 +42,7 @@ public class CouncilController {
 
         Integer councilId = null;
         for (ClubMembership m : membershipRepository.findAll()) {
-            if (m.getStudent().getRollNumber().equals(rollNumber) && m.getClub() == null && m.getRole() != null) {
+            if (m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() != null && "GenSec".equalsIgnoreCase(m.getRole().getTitle())) {
                 councilId = m.getRole().getCouncil().getCouncilId();
                 break;
             }
@@ -70,12 +74,17 @@ public class CouncilController {
     public String createRole(@RequestParam Integer clubId, @RequestParam String title, 
                              @RequestParam(required=false) boolean canEditMembers, 
                              @RequestParam(required=false) boolean canEditPors, 
-                             @RequestParam(required=false) boolean canFloatForms) {
+                             @RequestParam(required=false) boolean canFloatForms,
+                             @RequestParam(required=false) boolean canViewEmail,
+                             @RequestParam(required=false) boolean canViewPhone) {
         
         List<String> perms = new ArrayList<>();
         if(canEditMembers) perms.add("\"MANAGE_MEMBERS\"");
         if(canEditPors) perms.add("\"MANAGE_PORS\"");
         if(canFloatForms) perms.add("\"CREATE_FORMS\"");
+        if(canViewEmail) perms.add("\"VIEW_EMAIL\"");
+        if(canViewPhone) perms.add("\"VIEW_PHONE\"");
+        
         String json = "[" + String.join(",", perms) + "]";
 
         Club club = clubRepository.findById(clubId).orElseThrow();
@@ -94,19 +103,28 @@ public class CouncilController {
         PorRole role = roleRepository.findById(roleId).orElseThrow();
         Club club = clubRepository.findById(clubId).orElseThrow();
 
-        ClubMembership cm = new ClubMembership();
-        cm.setStudent(student);
-        cm.setClub(club);
+        // INTEGRITY CHECK: Must already be a member of the club
+        Optional<ClubMembership> existing = membershipRepository.findAll().stream()
+            .filter(m -> m.getClub() != null && m.getClub().getClubId().equals(clubId) && m.getStudent().getRollNumber().equals(rollNumber))
+            .findFirst();
+            
+        if(existing.isEmpty()) {
+            return "redirect:/gensec?error=StudentNotMemberOfClub";
+        }
+
+        ClubMembership cm = existing.get();
         cm.setRole(role);
-        cm.setAcademicYear("2026-2027");
         membershipRepository.save(cm);
         return "redirect:/gensec?success=PorAssigned";
     }
 
     @PostMapping("/gensec/remove-por")
     public String removePor(@RequestParam Integer membershipId) {
-        membershipRepository.deleteById(membershipId);
-        return "redirect:/gensec?success=PorRemoved";
+        ClubMembership cm = membershipRepository.findById(membershipId).orElseThrow();
+        // DEMOTION LOGIC: Strip role, keep membership
+        cm.setRole(null);
+        membershipRepository.save(cm);
+        return "redirect:/gensec?success=PorRemovedDemoted";
     }
 
     @PostMapping("/gensec/allocate-room")
