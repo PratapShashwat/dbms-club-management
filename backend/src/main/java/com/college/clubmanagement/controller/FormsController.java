@@ -18,17 +18,20 @@ public class FormsController {
     private final StudentRepository studentRepository;
     private final ClubRepository clubRepository;
     private final ClubManagementService clubManagementService;
+    private final ClubMembershipRepository clubMembershipRepository;
 
     public FormsController(DynamicFormRepository dynamicFormRepository,
                            FormSubmissionRepository formSubmissionRepository,
                            StudentRepository studentRepository,
                            ClubRepository clubRepository,
-                           ClubManagementService clubManagementService) {
+                           ClubManagementService clubManagementService,
+                           ClubMembershipRepository clubMembershipRepository) {
         this.dynamicFormRepository = dynamicFormRepository;
         this.formSubmissionRepository = formSubmissionRepository;
         this.studentRepository = studentRepository;
         this.clubRepository = clubRepository;
         this.clubManagementService = clubManagementService;
+        this.clubMembershipRepository = clubMembershipRepository;
     }
 
     @GetMapping("/form/{id}")
@@ -87,10 +90,16 @@ public class FormsController {
 
         DynamicForm form = dynamicFormRepository.findById(formId).orElseThrow();
         
-        // Security check: ONLY creator can view their form submissions (or superadmin)
         Boolean isSuper = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
         boolean isCreator = form.getCreatedBy() != null && form.getCreatedBy().getRollNumber().equals(rollNumber);
-        if (!isCreator && (isSuper == null || !isSuper)) {
+        
+        boolean isGenSecOfCouncil = clubMembershipRepository.findAll().stream()
+                .anyMatch(m -> m.getStudent().getRollNumber().equals(rollNumber) 
+                            && m.getRole() != null 
+                            && "GenSec".equals(m.getRole().getTitle())
+                            && m.getRole().getCouncil().getCouncilId().equals(form.getClub().getCouncil().getCouncilId()));
+
+        if (!isCreator && !isGenSecOfCouncil && (isSuper == null || !isSuper)) {
             return "redirect:/club/" + form.getClub().getClubId() + "?error=Unauthorized";
         }
 

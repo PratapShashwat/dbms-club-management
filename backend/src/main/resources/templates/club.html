@@ -112,7 +112,20 @@
                         <div class="card-body">
                             <h5 class="text-primary">Edit PORs</h5>
                             <p class="text-muted small">You have power to assign PORs to existing members.</p>
-                            <!-- Assign logic here -->
+                            
+                            <form th:action="@{/club/{id}/assign-por(id=${club.clubId})}" method="POST" class="d-flex flex-column gap-2 mb-2">
+                                <input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No" required>
+                                <select class="form-select form-select-sm" name="roleId" required>
+                                    <option th:each="r : ${clubRoles}" th:value="${r.roleId}" th:text="${r.title}"></option>
+                                    <option th:if="${clubRoles.isEmpty()}" value="" disabled>No PORs created yet</option>
+                                </select>
+                                <button class="btn btn-sm btn-primary">Assign POR</button>
+                            </form>
+                            <form th:action="@{/club/{id}/remove-por(id=${club.clubId})}" method="POST" class="d-flex gap-2">
+                                <input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No to Demote" required>
+                                <button class="btn btn-sm btn-danger">Demote</button>
+                            </form>
+
                         </div>
                     </div>
                 </div>
