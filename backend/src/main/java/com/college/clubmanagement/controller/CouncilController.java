@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@org.springframework.transaction.annotation.Transactional
 @Controller
 public class CouncilController {
     private final ClubRepository clubRepository;
@@ -54,19 +55,19 @@ public class CouncilController {
         if (councilId == null && !isSuper) return "redirect:/?error=NotGenSec";
         
         if (isSuper) {
-            model.addAttribute("roles", roleRepository.findAll().stream().filter(r -> r.getClub() != null).collect(Collectors.toList()));
-            model.addAttribute("memberships", membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getRole() != null).collect(Collectors.toList()));
+            model.addAttribute("roles", roleRepository.findByClubIsNotNull());
+            model.addAttribute("memberships", membershipRepository.findByClubIsNotNullAndRoleIsNotNull());
             model.addAttribute("clubs", clubRepository.findAll());
             model.addAttribute("rooms", roomRepository.findAll());
             model.addAttribute("allocations", roomAllocationRepository.findAll());
             model.addAttribute("isSuperAdmin", true);
         } else {
             final Integer cid = councilId;
-            model.addAttribute("roles", roleRepository.findAll().stream().filter(r -> r.getCouncil().getCouncilId().equals(cid) && r.getClub() != null).collect(Collectors.toList()));
-            model.addAttribute("memberships", membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getClub().getCouncil().getCouncilId().equals(cid) && m.getRole() != null).collect(Collectors.toList()));
-            model.addAttribute("clubs", clubRepository.findAll().stream().filter(c -> c.getCouncil().getCouncilId().equals(cid)).collect(Collectors.toList()));
+            model.addAttribute("roles", roleRepository.findByCouncil_CouncilIdAndClubIsNotNull(cid));
+            model.addAttribute("memberships", membershipRepository.findByClub_Council_CouncilIdAndRoleIsNotNull(cid));
+            model.addAttribute("clubs", clubRepository.findByCouncil_CouncilId(cid));
             model.addAttribute("rooms", roomRepository.findAll());
-            model.addAttribute("allocations", roomAllocationRepository.findAll().stream().filter(a -> a.getClub().getCouncil().getCouncilId().equals(cid)).collect(Collectors.toList()));
+            model.addAttribute("allocations", roomAllocationRepository.findByClub_Council_CouncilId(cid));
         }
 
         return "gensec";
@@ -103,7 +104,7 @@ public class CouncilController {
         if("GenSec".equalsIgnoreCase(role.getTitle())) return "redirect:/gensec?error=GenSec+cannot+delete+GenSec+roles!";
         
         // Demote all users
-        membershipRepository.findAll().stream().filter(m -> m.getRole() != null && m.getRole().getRoleId().equals(roleId)).forEach(m -> {
+        membershipRepository.findByRole_RoleId(roleId).forEach(m -> {
             m.setRole(null);
             membershipRepository.save(m);
         });

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Optional;
 
+@org.springframework.transaction.annotation.Transactional
 @Controller
 public class ClubController {
     private final ClubRepository clubRepository;
@@ -43,14 +44,14 @@ public class ClubController {
         Club club = clubRepository.findById(id).orElseThrow();
         model.addAttribute("club", club);
         
-        Optional<ClubRoomAllocation> alloc = roomAllocationRepository.findAll().stream().filter(a -> a.getClub().getClubId().equals(id)).findFirst();
+        Optional<ClubRoomAllocation> alloc = roomAllocationRepository.findByClub_ClubId(id);
         model.addAttribute("allocatedRoom", alloc.orElse(null));
 
-        model.addAttribute("verticals", verticalRepository.findAll().stream().filter(v -> v.getClub().getClubId().equals(id)).collect(Collectors.toList()));
-        List<DynamicForm> allForms = formRepository.findAll().stream().filter(f -> f.getClub().getClubId().equals(id)).collect(Collectors.toList());
-        model.addAttribute("clubRoles", roleRepository.findAll().stream().filter(r -> r.getClub().getClubId().equals(id) && !"GenSec".equalsIgnoreCase(r.getTitle())).collect(Collectors.toList()));
+        model.addAttribute("verticals", verticalRepository.findByClub_ClubId(id));
+        List<DynamicForm> allForms = formRepository.findByClub_ClubId(id);
+        model.addAttribute("clubRoles", roleRepository.findByClub_ClubId(id).stream().filter(r -> !"GenSec".equalsIgnoreCase(r.getTitle())).collect(Collectors.toList()));
 
-        List<ClubMembership> allMembers = membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id)).collect(Collectors.toList());
+        List<ClubMembership> allMembers = membershipRepository.findByClub_ClubId(id);
         
         boolean isCouncilGenSec = membershipRepository.findAll().stream().anyMatch(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() != null && "GenSec".equals(m.getRole().getTitle()) && m.getRole().getCouncil().getCouncilId().equals(club.getCouncil().getCouncilId()));
         Boolean isSuperAdmin = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
@@ -71,7 +72,7 @@ public class ClubController {
                 canCreateForms = p.contains("CREATE_FORMS"); canEditMembers = p.contains("MANAGE_MEMBERS"); canEditPors = p.contains("MANAGE_PORS");
             }
             model.addAttribute("canCreateForms", canCreateForms); model.addAttribute("canEditMembers", canEditMembers); model.addAttribute("canEditPors", canEditPors);
-            model.addAttribute("myCreatedForms", formRepository.findAll().stream().filter(f -> f.getClub().getClubId().equals(id) && f.getCreatedBy() != null && f.getCreatedBy().getRollNumber().equals(rollNumber)).collect(Collectors.toList()));
+            model.addAttribute("myCreatedForms", formRepository.findByClub_ClubIdAndCreatedBy_RollNumber(id, rollNumber));
         }
         
         List<DynamicForm> visibleForms = allForms.stream().filter(f -> {
@@ -109,7 +110,7 @@ public class ClubController {
         boolean hasAnyMembership = membershipRepository.findAll().stream().anyMatch(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber));
         if(!hasAnyMembership) return "redirect:/club/" + id + "?error=Student+must+be+a+member+first!";
         
-        ClubMembership emptyMem = membershipRepository.findAll().stream().filter(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() == null).findFirst().orElse(null);
+        ClubMembership emptyMem = membershipRepository.findByClub_ClubId(id).stream().filter(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() == null).findFirst().orElse(null);
         if(emptyMem != null) {
             emptyMem.setRole(role); membershipRepository.save(emptyMem);
         } else {

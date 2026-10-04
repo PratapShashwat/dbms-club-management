@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@org.springframework.transaction.annotation.Transactional
 @Controller
 public class AuthController {
     private final StudentRepository studentRepository;
@@ -49,7 +50,7 @@ public class AuthController {
         String rollNumber = (String) session.getAttribute("USER_ROLL");
         if (rollNumber == null) return "redirect:/login";
         model.addAttribute("student", studentRepository.findById(rollNumber).orElseThrow());
-        model.addAttribute("memberships", membershipRepository.findAll().stream().filter(m -> m.getStudent().getRollNumber().equals(rollNumber)).collect(Collectors.toList()));
+        model.addAttribute("memberships", membershipRepository.findByStudentRollNumberEager(rollNumber));
         return "profile";
     }
 

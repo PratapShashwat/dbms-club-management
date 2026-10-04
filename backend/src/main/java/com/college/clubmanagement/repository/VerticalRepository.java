@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface VerticalRepository extends JpaRepository<Vertical, Integer> {
+    java.util.List<com.college.clubmanagement.entity.Vertical> findByClub_ClubId(Integer clubId);
 }
