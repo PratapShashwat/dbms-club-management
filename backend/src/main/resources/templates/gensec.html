@@ -14,12 +14,12 @@
                 <div class="card-header bg-secondary text-white"><h5 class="mb-0">Council Room Allocations</h5></div>
                 <div class="card-body">
                     <ul class="list-group mb-3">
-                        <li class="list-group-item d-flex justify-content-between" th:each="a : ${allocations}"><span th:text="${a.club.name}"></span><strong th:text="${a.room.buildingName + ' ' + a.room.roomNumber}"></strong></li>
+                        <li class="list-group-item d-flex justify-content-between" th:each="a : ${allocations}"><span th:text="${a.club.name}"></span><strong th:text="${'Room ' + a.room.roomId}"></strong></li>
                     </ul>
                     <form th:action="@{/gensec/allocate-room}" method="POST">
                         <div class="d-flex gap-2">
                             <select class="form-select" name="clubId" required><option th:each="c : ${clubs}" th:value="${c.clubId}" th:text="${c.name}"></option></select>
-                            <select class="form-select" name="roomId" required><option th:each="r : ${rooms}" th:value="${r.roomId}" th:text="${r.buildingName + ' ' + r.roomNumber}"></option></select>
+                            <select class="form-select" name="roomId" required><option th:each="r : ${rooms}" th:value="${r.roomId}" th:text="${'Room ' + r.roomId}"></option></select>
                             <button type="submit" class="btn btn-secondary">Allocate</button>
                         </div>
                     </form>

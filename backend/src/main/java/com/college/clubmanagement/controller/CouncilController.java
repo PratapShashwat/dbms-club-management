@@ -107,7 +107,7 @@ public class CouncilController {
         ClubRoomAllocation alloc = new ClubRoomAllocation();
         alloc.setClub(club); alloc.setRoom(room); alloc.setAcademicYear("2026-2027");
         roomAllocationRepository.save(alloc);
-        loggingService.log(session.getAttribute("USER_ROLL").toString(), "Allocate Room", room.getBuildingName() + " to " + club.getName());
+        loggingService.log(session.getAttribute("USER_ROLL").toString(), "Allocate Room", "Room " + room.getRoomId() + " to " + club.getName());
         return "redirect:/gensec?success=RoomAllocated";
     }
 }
