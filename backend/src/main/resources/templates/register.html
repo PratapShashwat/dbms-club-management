@@ -9,6 +9,7 @@
 <body class="bg-light d-flex align-items-center justify-content-center" style="height: 100vh;">
 <div class="card shadow-sm p-4" style="width: 100%; max-width: 400px;">
     <h3 class="text-center mb-4 text-success">Student Registration</h3>
+    <div th:if="${param.error}" class="alert alert-danger fw-bold shadow-sm mb-3" th:text="${param.error}"></div>
     <form th:action="@{/register}" method="POST">
         <input type="text" class="form-control mb-2" name="rollNumber" placeholder="Roll Number" required>
 <input type="password" class="form-control mb-2" name="password" placeholder="Password (Optional, defaults to Roll No)">

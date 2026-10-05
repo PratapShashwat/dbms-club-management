@@ -44,7 +44,7 @@ public class AuthController {
             HttpSession session) {
             
         if (studentRepository.existsById(rollNumber)) {
-            return "redirect:/register?error=RollNumberAlreadyExists";
+            return "redirect:/register?error=Roll+Number+is+already+registered!";
         }
         
         com.college.clubmanagement.entity.Student student = new com.college.clubmanagement.entity.Student();
