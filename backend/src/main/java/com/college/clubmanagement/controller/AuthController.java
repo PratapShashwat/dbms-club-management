@@ -25,7 +25,45 @@ public class AuthController {
     }
 
     @GetMapping("/login") public String loginPage() { return "login"; }
-    @GetMapping("/register") public String registerPage() { return "register"; }
+    @GetMapping("/register") 
+    public String registerPage(Model model) { 
+        model.addAttribute("branches", java.util.Arrays.asList("CSE", "ECE", "EEE", "MECH", "CIVIL", "CHEM", "META", "ARCH"));
+        return "register"; 
+    }
+
+    @PostMapping("/register")
+    public String registerSubmit(
+            @RequestParam String rollNumber,
+            @RequestParam(required = false) String password,
+            @RequestParam String name,
+            @RequestParam String email,
+            @RequestParam(required = false) String phoneNumber,
+            @RequestParam String branch,
+            @RequestParam(required = false) String course,
+            @RequestParam(required = false) Integer graduationYear,
+            HttpSession session) {
+            
+        if (studentRepository.existsById(rollNumber)) {
+            return "redirect:/register?error=RollNumberAlreadyExists";
+        }
+        
+        com.college.clubmanagement.entity.Student student = new com.college.clubmanagement.entity.Student();
+        student.setRollNumber(rollNumber);
+        student.setPassword(password != null && !password.isEmpty() ? password : rollNumber);
+        student.setName(name);
+        student.setEmail(email);
+        student.setPhoneNumber(phoneNumber);
+        student.setBranch(branch);
+        student.setCourse(course);
+        student.setGraduationYear(graduationYear);
+        
+        studentRepository.save(student);
+        
+        session.setAttribute("USER_ROLL", student.getRollNumber());
+        session.setAttribute("USER_NAME", student.getName());
+        return "redirect:/";
+    }
+
     @GetMapping("/logout") public String logout(HttpSession session) { session.invalidate(); return "redirect:/login"; }
 
     @PostMapping("/login")
