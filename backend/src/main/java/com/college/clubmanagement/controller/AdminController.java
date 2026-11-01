@@ -16,63 +16,73 @@ public class AdminController {
     private final ClubMembershipRepository membershipRepository;
     private final PorRoleRepository roleRepository;
     private final ClubRepository clubRepository;
+    private final VerticalRepository verticalRepository;
     private final LoggingService loggingService;
     private final SystemLogRepository logRepository;
 
-    public AdminController(CouncilRepository councilRepository, StudentRepository studentRepository, 
+    public AdminController(CouncilRepository councilRepository, StudentRepository studentRepository,
                            ClubMembershipRepository membershipRepository, PorRoleRepository roleRepository,
-                           ClubRepository clubRepository, LoggingService loggingService, SystemLogRepository logRepository) {
+                           ClubRepository clubRepository, VerticalRepository verticalRepository,
+                           LoggingService loggingService, SystemLogRepository logRepository) {
         this.councilRepository = councilRepository;
         this.studentRepository = studentRepository;
         this.membershipRepository = membershipRepository;
         this.roleRepository = roleRepository;
         this.clubRepository = clubRepository;
+        this.verticalRepository = verticalRepository;
         this.loggingService = loggingService;
         this.logRepository = logRepository;
     }
 
-    // ── Auth helper ──────────────────────────────────────────────────────────────
+    // ── Auth helper ───────────────────────────────────────────────────────────────
 
     private boolean isSuperAdmin(HttpSession session) {
         Boolean sa = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
         return Boolean.TRUE.equals(sa);
     }
 
-    // ── GET dashboard ────────────────────────────────────────────────────────────
+    // ── GET dashboard ─────────────────────────────────────────────────────────────
 
     @GetMapping("/superadmin")
     public String viewAdminDashboard(HttpSession session, Model model) {
         if (!isSuperAdmin(session)) return "redirect:/?error=Unauthorized";
-        
+
         model.addAttribute("councils", councilRepository.findAll());
         model.addAttribute("gensecs", membershipRepository.findAll().stream()
-                .filter(m -> m.getRole() != null && "GenSec".equals(m.getRole().getTitle())).collect(Collectors.toList()));
-        model.addAttribute("logs", logRepository.findAll().stream().sorted((a,b)->b.getTimestamp().compareTo(a.getTimestamp())).limit(50).collect(Collectors.toList()));
+                .filter(m -> m.getRole() != null && "GenSec".equals(m.getRole().getTitle()))
+                .collect(Collectors.toList()));
+        model.addAttribute("logs", logRepository.findAll().stream()
+                .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
+                .limit(50).collect(Collectors.toList()));
         model.addAttribute("allRoles", roleRepository.findAll());
         model.addAttribute("allClubs", clubRepository.findAll());
+        model.addAttribute("allVerticals", verticalRepository.findAll());
         return "superadmin";
     }
 
-    // ── POST endpoints (all hardened) ────────────────────────────────────────────
+    // ── GenSec management ─────────────────────────────────────────────────────────
 
     @PostMapping("/admin/assign-gensec")
-    public String assignGenSec(@RequestParam String rollNumber, @RequestParam Integer councilId, HttpSession session) {
+    public String assignGenSec(@RequestParam String rollNumber, @RequestParam Integer councilId,
+                               HttpSession session) {
         if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
 
         List<ClubMembership> validMemberships = membershipRepository.findAll().stream()
-                .filter(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getClub().getCouncil().getCouncilId().equals(councilId))
+                .filter(m -> m.getStudent().getRollNumber().equals(rollNumber)
+                        && m.getClub().getCouncil().getCouncilId().equals(councilId))
                 .collect(Collectors.toList());
-                
-        if(validMemberships.isEmpty()) return "redirect:/superadmin?error=Student+must+belong+to+a+club+within+this+council+first!";
-        
+        if (validMemberships.isEmpty())
+            return "redirect:/superadmin?error=Student+must+belong+to+a+club+within+this+council+first!";
+
         boolean councilHasGensec = membershipRepository.findAll().stream()
-                .anyMatch(m -> m.getRole() != null && "GenSec".equals(m.getRole().getTitle()) && m.getRole().getCouncil().getCouncilId().equals(councilId));
-        if(councilHasGensec) return "redirect:/superadmin?error=Council+already+has+a+GenSec!";
-        
+                .anyMatch(m -> m.getRole() != null && "GenSec".equals(m.getRole().getTitle())
+                        && m.getRole().getCouncil().getCouncilId().equals(councilId));
+        if (councilHasGensec) return "redirect:/superadmin?error=Council+already+has+a+GenSec!";
+
         Council council = councilRepository.findById(councilId).orElseThrow();
         ClubMembership cm = validMemberships.get(0);
         Club club = cm.getClub();
-        
+
         PorRole role = roleRepository.findAll().stream()
                 .filter(r -> "GenSec".equals(r.getTitle()) && r.getClub().getClubId().equals(club.getClubId()))
                 .findFirst().orElseGet(() -> {
@@ -85,10 +95,11 @@ public class AdminController {
                 });
         cm.setRole(role);
         membershipRepository.save(cm);
-        loggingService.log("SuperAdmin", "Assign GenSec", rollNumber + " appointed GenSec for Council " + council.getName());
+        loggingService.log("SuperAdmin", "Assign GenSec",
+                rollNumber + " appointed GenSec for Council " + council.getName());
         return "redirect:/superadmin?success=GenSecAssigned";
     }
-    
+
     @PostMapping("/admin/remove-gensec")
     public String removeGenSec(@RequestParam Integer membershipId, HttpSession session) {
         if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
@@ -101,35 +112,31 @@ public class AdminController {
         return "redirect:/superadmin?success=GenSecRemoved";
     }
 
+    // ── POR management ────────────────────────────────────────────────────────────
+
     @PostMapping("/admin/create-por")
-    public String createPor(
-            @RequestParam String title, 
-            @RequestParam String entityId, 
-            @RequestParam(required = false) String canEditMembers,
-            @RequestParam(required = false) String canEditPors,
-            @RequestParam(required = false) String canFloatForms,
-            HttpSession session) {
+    public String createPor(@RequestParam String title,
+                            @RequestParam String entityId,
+                            @RequestParam(required = false) String canEditMembers,
+                            @RequestParam(required = false) String canEditPors,
+                            @RequestParam(required = false) String canFloatForms,
+                            HttpSession session) {
         if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
-        
+
         java.util.List<String> perms = new java.util.ArrayList<>();
         if (canEditMembers != null) perms.add("\"MANAGE_MEMBERS\"");
-        if (canEditPors != null) perms.add("\"MANAGE_PORS\"");
-        if (canFloatForms != null) perms.add("\"CREATE_FORMS\"");
-        
-        String permissionsJson = "[" + String.join(",", perms) + "]";
+        if (canEditPors    != null) perms.add("\"MANAGE_PORS\"");
+        if (canFloatForms  != null) perms.add("\"CREATE_FORMS\"");
 
         PorRole role = new PorRole();
         role.setTitle(title);
-        role.setPermissionsJson(permissionsJson);
-        
+        role.setPermissionsJson("[" + String.join(",", perms) + "]");
+
         if (entityId != null && entityId.startsWith("council_")) {
-            Integer cId = Integer.parseInt(entityId.split("_")[1]);
-            role.setCouncil(councilRepository.findById(cId).orElse(null));
+            role.setCouncil(councilRepository.findById(Integer.parseInt(entityId.split("_")[1])).orElse(null));
         } else if (entityId != null && entityId.startsWith("club_")) {
-            Integer clId = Integer.parseInt(entityId.split("_")[1]);
-            role.setClub(clubRepository.findById(clId).orElse(null));
+            role.setClub(clubRepository.findById(Integer.parseInt(entityId.split("_")[1])).orElse(null));
         }
-        
         roleRepository.save(role);
         loggingService.log("SuperAdmin", "Create POR", "Created new POR: " + title);
         return "redirect:/superadmin?success=POR+Created";
@@ -140,17 +147,73 @@ public class AdminController {
         if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
 
         PorRole role = roleRepository.findById(roleId).orElseThrow();
-        if ("GenSec".equalsIgnoreCase(role.getTitle())) {
+        if ("GenSec".equalsIgnoreCase(role.getTitle()))
             return "redirect:/superadmin?error=Cannot+delete+GenSec+role+directly!";
-        }
-        
+
         membershipRepository.findByRole_RoleId(roleId).forEach(m -> {
-            m.setRole(null);
-            membershipRepository.save(m);
+            m.setRole(null); membershipRepository.save(m);
         });
-        
         roleRepository.delete(role);
         loggingService.log("SuperAdmin", "Delete POR", "Deleted POR: " + role.getTitle());
         return "redirect:/superadmin?success=POR+Deleted";
+    }
+
+    // ── Vertical management (SuperAdmin) ──────────────────────────────────────────
+
+    /** Create a vertical for any club. SuperAdmin only. */
+    @PostMapping("/admin/create-vertical")
+    public String createVertical(@RequestParam Integer clubId,
+                                 @RequestParam String name,
+                                 HttpSession session) {
+        if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
+
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.isEmpty()) return "redirect:/superadmin?error=Vertical+name+cannot+be+empty";
+
+        Vertical v = new Vertical();
+        v.setName(trimmed);
+        v.setClub(clubRepository.findById(clubId).orElseThrow());
+        verticalRepository.save(v);
+        loggingService.log("SuperAdmin", "Create Vertical",
+                "Created vertical '" + trimmed + "' for club " + clubId);
+        return "redirect:/superadmin?success=VerticalCreated";
+    }
+
+    /** Rename a vertical. SuperAdmin only. */
+    @PostMapping("/admin/rename-vertical")
+    public String renameVertical(@RequestParam Integer verticalId,
+                                 @RequestParam String name,
+                                 HttpSession session) {
+        if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
+
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.isEmpty()) return "redirect:/superadmin?error=Vertical+name+cannot+be+empty";
+
+        Vertical v = verticalRepository.findById(verticalId).orElseThrow();
+        v.setName(trimmed);
+        verticalRepository.save(v);
+        loggingService.log("SuperAdmin", "Rename Vertical",
+                "Vertical " + verticalId + " renamed to '" + trimmed + "'");
+        return "redirect:/superadmin?success=VerticalRenamed";
+    }
+
+    /**
+     * Delete a vertical. SuperAdmin only.
+     * Clears vertical from all memberships using it before deleting.
+     */
+    @PostMapping("/admin/delete-vertical")
+    public String deleteVertical(@RequestParam Integer verticalId, HttpSession session) {
+        if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
+
+        Vertical v = verticalRepository.findById(verticalId).orElseThrow();
+        Integer clubId = v.getClub().getClubId();
+
+        membershipRepository.findByClub_ClubId(clubId).stream()
+                .filter(m -> m.getVertical() != null && m.getVertical().getVerticalId().equals(verticalId))
+                .forEach(m -> { m.setVertical(null); membershipRepository.save(m); });
+
+        verticalRepository.delete(v);
+        loggingService.log("SuperAdmin", "Delete Vertical", "Deleted vertical " + verticalId);
+        return "redirect:/superadmin?success=VerticalDeleted";
     }
 }

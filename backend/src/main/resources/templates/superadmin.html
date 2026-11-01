@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head><title>Super Admin Console</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link rel="stylesheet" href="/css/styles.css">
-
 </head>
-
 <body class="bg-light">
 <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
     <div class="container"><a class="navbar-brand" href="#">SuperAdmin Portal</a><a class="nav-link text-white" href="/">Back to Dashboard</a></div>
 </nav>
 <div class="container mt-5">
-    <!-- ERROR TOAST/BOX -->
     <div th:if="${param.error}" class="alert alert-danger fw-bold shadow-sm" th:text="${param.error}"></div>
     <div th:if="${param.success}" class="alert alert-success fw-bold shadow-sm" th:text="${param.success}"></div>
-    
+
     <div class="row">
+        <!-- ── Assign GenSec ─────────────────────────────────────────────── -->
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm border-danger h-100">
                 <div class="card-header bg-white"><h4 class="text-danger">Assign General Secretary</h4></div>
@@ -33,21 +30,32 @@
                 </div>
             </div>
         </div>
+
+        <!-- ── Current GenSecs ──────────────────────────────────────────── -->
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header"><h4 class="mb-0">Current General Secretaries</h4></div>
                 <div class="card-body">
                     <ul class="list-group">
                         <li class="list-group-item d-flex justify-content-between align-items-center" th:each="g : ${gensecs}">
-                            <div><a href="#" class="text-decoration-none fw-bold fs-5 text-dark" th:attr="onclick=|showContact('${g.student.name}', '${g.student.email}', '${g.student.phoneNumber}')|" th:text="${g.student.name}"></a> (<span th:text="${g.student.rollNumber}"></span>)<br><small th:text="${g.role.council.name} + ' - ' + ${g.club.name}"></small></div>
-                            <form th:action="@{/admin/remove-gensec}" method="POST"><input type="hidden" name="membershipId" th:value="${g.membershipId}"><button type="submit" class="btn btn-sm btn-outline-danger">Demote</button></form>
+                            <div>
+                                <a href="#" class="text-decoration-none fw-bold fs-5 text-dark"
+                                   th:attr="onclick=|showContact('${g.student.name}', '${g.student.email}', '${g.student.phoneNumber}')|"
+                                   th:text="${g.student.name}"></a>
+                                (<span th:text="${g.student.rollNumber}"></span>)<br>
+                                <small th:text="${g.role.council.name} + ' - ' + ${g.club.name}"></small>
+                            </div>
+                            <form th:action="@{/admin/remove-gensec}" method="POST">
+                                <input type="hidden" name="membershipId" th:value="${g.membershipId}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Demote</button>
+                            </form>
                         </li>
                     </ul>
                 </div>
             </div>
         </div>
-        
-                <!-- Manage PORs -->
+
+        <!-- ── Manage POR Titles ─────────────────────────────────────────── -->
         <div class="col-md-12 mb-4">
             <div class="card shadow-sm border-warning">
                 <div class="card-header bg-white"><h4 class="text-warning mb-0">Manage POR Titles</h4></div>
@@ -71,22 +79,19 @@
                                 <div class="form-check form-check-sm mb-1"><input class="form-check-input" type="checkbox" name="canEditMembers"><label class="form-check-label small">Can Edit Members</label></div>
                                 <div class="form-check form-check-sm mb-1"><input class="form-check-input" type="checkbox" name="canEditPors"><label class="form-check-label small">Can Assign PORs</label></div>
                                 <div class="form-check form-check-sm mb-1"><input class="form-check-input" type="checkbox" name="canFloatForms"><label class="form-check-label small">Can Create Forms</label></div>
-                                
-                                <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold">Create POR</button>
+                                <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold mt-1">Create POR</button>
                             </form>
                         </div>
                         <div class="col-md-7">
                             <h6 class="text-muted">Existing PORs</h6>
-                            <div style="max-height: 250px; overflow-y: auto;">
+                            <div style="max-height:250px; overflow-y:auto;">
                                 <ul class="list-group">
                                     <li class="list-group-item d-flex justify-content-between align-items-center py-1" th:each="r : ${allRoles}">
                                         <div>
                                             <strong th:text="${r.title}"></strong>
                                             <span class="badge bg-secondary ms-2" th:if="${r.council != null}" th:text="'Council: ' + ${r.council.name}"></span>
                                             <span class="badge bg-info text-dark ms-1" th:if="${r.club != null}" th:text="'Club: ' + ${r.club.name}"></span>
-                                            <div class="mt-1">
-                                                <small class="text-muted" th:text="${r.permissionsJson}"></small>
-                                            </div>
+                                            <div class="mt-1"><small class="text-muted" th:text="${r.permissionsJson}"></small></div>
                                         </div>
                                         <form th:if="${r.title != 'GenSec'}" th:action="@{/admin/delete-por}" method="POST">
                                             <input type="hidden" name="roleId" th:value="${r.roleId}">
@@ -101,28 +106,86 @@
             </div>
         </div>
 
+        <!-- ── Manage Verticals ──────────────────────────────────────────── -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm border-primary">
+                <div class="card-header bg-white"><h4 class="text-primary mb-0">Manage Verticals</h4></div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Create vertical -->
+                        <div class="col-md-4">
+                            <h6 class="text-muted">Add New Vertical</h6>
+                            <form th:action="@{/admin/create-vertical}" method="POST" class="d-flex flex-column gap-2">
+                                <select class="form-select form-select-sm" name="clubId" required>
+                                    <option value="">-- Select Club --</option>
+                                    <option th:each="cl : ${allClubs}" th:value="${cl.clubId}" th:text="${cl.name}"></option>
+                                </select>
+                                <input type="text" class="form-control form-control-sm" name="name" placeholder="Vertical name" required>
+                                <button type="submit" class="btn btn-sm btn-primary">+ Add Vertical</button>
+                            </form>
+                        </div>
+                        <!-- Existing verticals grouped by club -->
+                        <div class="col-md-8">
+                            <h6 class="text-muted">Existing Verticals</h6>
+                            <div style="max-height:300px; overflow-y:auto;">
+                                <ul class="list-group">
+                                    <li class="list-group-item py-1" th:each="v : ${allVerticals}">
+                                        <div class="d-flex justify-content-between align-items-center gap-2">
+                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                                <span class="badge bg-info text-dark" th:text="${v.club.name}"></span>
+                                                <form th:action="@{/admin/rename-vertical}" method="POST" class="d-flex gap-1 align-items-center flex-grow-1">
+                                                    <input type="hidden" name="verticalId" th:value="${v.verticalId}">
+                                                    <input type="text" name="name" class="form-control form-control-sm" th:value="${v.name}" required style="max-width:200px;">
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Rename</button>
+                                                </form>
+                                            </div>
+                                            <form th:action="@{/admin/delete-vertical}" method="POST"
+                                                  onsubmit="return confirm('Delete this vertical? Members assigned to it will be unassigned.')">
+                                                <input type="hidden" name="verticalId" th:value="${v.verticalId}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </li>
+                                    <li th:if="${#lists.isEmpty(allVerticals)}" class="list-group-item text-muted">No verticals defined yet.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── System Logs ───────────────────────────────────────────────── -->
         <div class="col-md-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-dark text-white"><h5>System Operation Logs</h5></div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div class="card-body" style="max-height:400px; overflow-y:auto;">
                     <table class="table table-sm table-hover">
                         <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Details</th></tr></thead>
-                        <tbody><tr th:each="l : ${logs}"><td th:text="${l.timestamp}"></td><td th:text="${l.actor}"></td><td th:text="${l.action}"></td><td th:text="${l.details}"></td></tr></tbody>
+                        <tbody>
+                            <tr th:each="l : ${logs}">
+                                <td th:text="${l.timestamp}"></td>
+                                <td th:text="${l.actor}"></td>
+                                <td th:text="${l.action}"></td>
+                                <td th:text="${l.details}"></td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 <!-- Contact Info Modal -->
 <div class="modal fade" id="contactModal" tabindex="-1">
   <div class="modal-dialog modal-sm modal-dialog-centered">
-    <div class="modal-content border-dark" style="border-width: 3px; box-shadow: 4px 4px 0px #000;">
+    <div class="modal-content border-dark" style="border-width:3px; box-shadow:4px 4px 0px #000;">
       <div class="modal-header bg-warning">
         <h5 class="modal-title fw-bold" id="contactModalLabel">Contact Info</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" style="font-family: 'Space Mono', monospace;">
+      <div class="modal-body" style="font-family:'Space Mono',monospace;">
         <p class="mb-1"><strong>Name:</strong> <span id="modalName"></span></p>
         <p class="mb-1"><strong>Email:</strong> <span id="modalEmail"></span></p>
         <p class="mb-0"><strong>Phone:</strong> <span id="modalPhone"></span></p>
