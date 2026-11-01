@@ -44,23 +44,40 @@
                         <thead><tr><th>Name</th><th>Roll No</th><th>Vertical</th><th>POR</th><th th:if="${canEditMembers or canEditPors}">Actions</th></tr></thead>
                         <tbody>
                             <tr th:each="m : ${allMembers}">
-                                <td><a href="#" class="text-decoration-none fw-bold" th:attr="onclick=|showContact('${m.student.name}', '${m.student.email}', '${m.student.phoneNumber}')|" th:text="${m.student.name}"></a></td><td th:text="${m.student.rollNumber}"></td><td th:text="${m.vertical != null ? m.vertical.name : 'None'}"></td>
+                                <td><a href="#" class="text-decoration-none fw-bold" th:attr="onclick=|showContact('${m.student.name}', '${m.student.email}', '${m.student.phoneNumber}')|" th:text="${m.student.name}"></a></td>
+                                <td th:text="${m.student.rollNumber}"></td>
+                                <td th:text="${m.vertical != null ? m.vertical.name : 'None'}"></td>
                                 <td>
                                     <span class="badge bg-secondary" th:if="${m.role != null}" th:text="${m.role.title}"></span>
                                     <span class="badge bg-light text-dark" th:if="${m.role == null}">Member</span>
                                 </td>
                                 <td th:if="${canEditMembers or canEditPors}">
-                                    <div class="d-flex gap-2">
-                                        <form th:if="${canEditPors and m.role != null and m.role.title != 'GenSec'}" th:action="@{/club/{id}/remove-por(id=${club.clubId})}" method="POST">
-                                            <input type="hidden" name="rollNumber" th:value="${m.student.rollNumber}">
+                                    <div class="d-flex flex-column gap-2">
+                                        <!-- Set Vertical (canEditMembers only) -->
+                                        <form th:if="${canEditMembers}" th:action="@{/club/{id}/assign-vertical(id=${club.clubId})}" method="POST" class="d-flex gap-1 align-items-center">
                                             <input type="hidden" name="membershipId" th:value="${m.membershipId}">
-                                            <button class="btn btn-sm btn-warning">Demote POR</button>
+                                            <select name="verticalId" class="form-select form-select-sm" style="width:auto;">
+                                                <option value="">None</option>
+                                                <option th:each="v : ${verticals}"
+                                                        th:value="${v.verticalId}"
+                                                        th:text="${v.name}"
+                                                        th:selected="${m.vertical != null and m.vertical.verticalId == v.verticalId}"></option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">Set</button>
                                         </form>
-                                        <form th:if="${canEditMembers}" th:action="@{/club/{id}/remove-member(id=${club.clubId})}" method="POST">
-                                            <input type="hidden" name="rollNumber" th:value="${m.student.rollNumber}">
-                                            <input type="hidden" name="membershipId" th:value="${m.membershipId}">
-                                            <button class="btn btn-sm btn-danger" th:text="${m.role == null ? 'Kick Member' : 'Kick & Demote'}"></button>
-                                        </form>
+                                        <!-- POR / Member actions -->
+                                        <div class="d-flex gap-1">
+                                            <form th:if="${canEditPors and m.role != null and m.role.title != 'GenSec'}" th:action="@{/club/{id}/remove-por(id=${club.clubId})}" method="POST">
+                                                <input type="hidden" name="rollNumber" th:value="${m.student.rollNumber}">
+                                                <input type="hidden" name="membershipId" th:value="${m.membershipId}">
+                                                <button class="btn btn-sm btn-warning">Demote POR</button>
+                                            </form>
+                                            <form th:if="${canEditMembers}" th:action="@{/club/{id}/remove-member(id=${club.clubId})}" method="POST">
+                                                <input type="hidden" name="rollNumber" th:value="${m.student.rollNumber}">
+                                                <input type="hidden" name="membershipId" th:value="${m.membershipId}">
+                                                <button class="btn btn-sm btn-danger" th:text="${m.role == null ? 'Kick Member' : 'Kick &amp; Demote'}"></button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -89,8 +106,15 @@
                 <div class="col-md-4" th:if="${canEditMembers}">
                     <div class="card shadow-sm border-success h-100">
                         <div class="card-body">
-                            <h5 class="text-success">Edit Memberships</h5>
-                            <form th:action="@{/club/{id}/add-member(id=${club.clubId})}" method="POST" class="d-flex gap-2 mb-2"><input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No" required><button class="btn btn-sm btn-success">Add</button></form>
+                            <h5 class="text-success">Add Member</h5>
+                            <form th:action="@{/club/{id}/add-member(id=${club.clubId})}" method="POST" class="d-flex flex-column gap-2">
+                                <input type="text" class="form-control form-control-sm" name="rollNumber" placeholder="Roll No" required>
+                                <select name="verticalId" class="form-select form-select-sm">
+                                    <option value="">No Vertical</option>
+                                    <option th:each="v : ${verticals}" th:value="${v.verticalId}" th:text="${v.name}"></option>
+                                </select>
+                                <button class="btn btn-sm btn-success">Add Member</button>
+                            </form>
                         </div>
                     </div>
                 </div>

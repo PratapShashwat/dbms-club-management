@@ -31,10 +31,18 @@ public class AdminController {
         this.logRepository = logRepository;
     }
 
+    // ── Auth helper ──────────────────────────────────────────────────────────────
+
+    private boolean isSuperAdmin(HttpSession session) {
+        Boolean sa = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
+        return Boolean.TRUE.equals(sa);
+    }
+
+    // ── GET dashboard ────────────────────────────────────────────────────────────
+
     @GetMapping("/superadmin")
     public String viewAdminDashboard(HttpSession session, Model model) {
-        Boolean isSuperAdmin = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
-        if (isSuperAdmin == null || !isSuperAdmin) return "redirect:/?error=Unauthorized";
+        if (!isSuperAdmin(session)) return "redirect:/?error=Unauthorized";
         
         model.addAttribute("councils", councilRepository.findAll());
         model.addAttribute("gensecs", membershipRepository.findAll().stream()
@@ -45,8 +53,12 @@ public class AdminController {
         return "superadmin";
     }
 
+    // ── POST endpoints (all hardened) ────────────────────────────────────────────
+
     @PostMapping("/admin/assign-gensec")
-    public String assignGenSec(@RequestParam String rollNumber, @RequestParam Integer councilId) {
+    public String assignGenSec(@RequestParam String rollNumber, @RequestParam Integer councilId, HttpSession session) {
+        if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
+
         List<ClubMembership> validMemberships = membershipRepository.findAll().stream()
                 .filter(m -> m.getStudent().getRollNumber().equals(rollNumber) && m.getClub().getCouncil().getCouncilId().equals(councilId))
                 .collect(Collectors.toList());
@@ -78,7 +90,9 @@ public class AdminController {
     }
     
     @PostMapping("/admin/remove-gensec")
-    public String removeGenSec(@RequestParam Integer membershipId) {
+    public String removeGenSec(@RequestParam Integer membershipId, HttpSession session) {
+        if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
+
         ClubMembership cm = membershipRepository.findById(membershipId).orElseThrow();
         String name = cm.getStudent().getName();
         cm.setRole(null);
@@ -93,13 +107,14 @@ public class AdminController {
             @RequestParam String entityId, 
             @RequestParam(required = false) String canEditMembers,
             @RequestParam(required = false) String canEditPors,
-            @RequestParam(required = false) String canFloatForms) {
+            @RequestParam(required = false) String canFloatForms,
+            HttpSession session) {
+        if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
         
         java.util.List<String> perms = new java.util.ArrayList<>();
         if (canEditMembers != null) perms.add("\"MANAGE_MEMBERS\"");
         if (canEditPors != null) perms.add("\"MANAGE_PORS\"");
         if (canFloatForms != null) perms.add("\"CREATE_FORMS\"");
-        
         
         String permissionsJson = "[" + String.join(",", perms) + "]";
 
@@ -121,7 +136,9 @@ public class AdminController {
     }
 
     @PostMapping("/admin/delete-por")
-    public String deletePor(@RequestParam Integer roleId) {
+    public String deletePor(@RequestParam Integer roleId, HttpSession session) {
+        if (!isSuperAdmin(session)) return "redirect:/superadmin?error=Unauthorized";
+
         PorRole role = roleRepository.findById(roleId).orElseThrow();
         if ("GenSec".equalsIgnoreCase(role.getTitle())) {
             return "redirect:/superadmin?error=Cannot+delete+GenSec+role+directly!";

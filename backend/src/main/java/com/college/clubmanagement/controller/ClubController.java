@@ -36,6 +36,39 @@ public class ClubController {
         this.loggingService = loggingService;
     }
 
+    // ── Auth helpers ────────────────────────────────────────────────────────────
+
+    /** Returns true if the session user has the given permission in the given club, or is SuperAdmin / Council GenSec. */
+    private boolean hasClubPermission(HttpSession session, Integer clubId, String permission) {
+        String roll = (String) session.getAttribute("USER_ROLL");
+        if (roll == null) return false;
+        Boolean isSuperAdmin = (Boolean) session.getAttribute("IS_SUPER_ADMIN");
+        if (Boolean.TRUE.equals(isSuperAdmin)) return true;
+
+        // Check if they are a GenSec of the council that owns this club
+        Club club = clubRepository.findById(clubId).orElse(null);
+        if (club != null) {
+            Integer councilId = club.getCouncil() != null ? club.getCouncil().getCouncilId() : null;
+            boolean isGenSec = membershipRepository.findByStudentRollNumberEager(roll).stream()
+                    .anyMatch(m -> m.getRole() != null && "GenSec".equals(m.getRole().getTitle())
+                            && m.getRole().getCouncil() != null
+                            && m.getRole().getCouncil().getCouncilId().equals(councilId));
+            if (isGenSec) return true;
+        }
+
+        // Check specific club-level permission
+        return membershipRepository.findByStudentRollNumberEager(roll).stream()
+                .anyMatch(m -> m.getClub() != null && m.getClub().getClubId().equals(clubId)
+                        && m.getRole() != null && m.getRole().getPermissionsJson() != null
+                        && m.getRole().getPermissionsJson().contains(permission));
+    }
+
+    private boolean isLoggedIn(HttpSession session) {
+        return session.getAttribute("USER_ROLL") != null;
+    }
+
+    // ── GET club view ────────────────────────────────────────────────────────────
+
     @GetMapping("/club/{id}")
     public String viewClub(@PathVariable Integer id, Model model, HttpSession session) {
         String rollNumber = (String) session.getAttribute("USER_ROLL");
@@ -88,8 +121,17 @@ public class ClubController {
         return "club";
     }
 
+    // ── POST endpoints (all hardened) ────────────────────────────────────────────
+
     @PostMapping("/club/{id}/add-member")
-    public String addMember(@PathVariable Integer id, @RequestParam String rollNumber, HttpSession session) {
+    public String addMember(@PathVariable Integer id,
+                            @RequestParam String rollNumber,
+                            @RequestParam(required = false) Integer verticalId,
+                            HttpSession session) {
+        if (!isLoggedIn(session)) return "redirect:/login";
+        if (!hasClubPermission(session, id, "MANAGE_MEMBERS"))
+            return "redirect:/club/" + id + "?error=Unauthorized";
+
         boolean existsMember = membershipRepository.findAll().stream().anyMatch(m -> m.getClub() != null && m.getClub().getClubId().equals(id) && m.getStudent().getRollNumber().equals(rollNumber) && m.getRole() == null);
         if (existsMember) return "redirect:/club/" + id + "?error=Already+a+member!";
         
@@ -97,13 +139,23 @@ public class ClubController {
         cm.setStudent(studentRepository.findById(rollNumber).orElseThrow());
         cm.setClub(clubRepository.findById(id).orElseThrow());
         cm.setAcademicYear("2026-2027");
+        if (verticalId != null) {
+            verticalRepository.findById(verticalId).ifPresent(cm::setVertical);
+        }
         membershipRepository.save(cm);
         loggingService.log(session.getAttribute("USER_ROLL").toString(), "Add Member", rollNumber + " added to Club " + id);
         return "redirect:/club/" + id + "?success=Added";
     }
 
     @PostMapping("/club/{id}/assign-por")
-    public String assignPor(@PathVariable Integer id, @RequestParam String rollNumber, @RequestParam Integer roleId, HttpSession session) {
+    public String assignPor(@PathVariable Integer id,
+                            @RequestParam String rollNumber,
+                            @RequestParam Integer roleId,
+                            HttpSession session) {
+        if (!isLoggedIn(session)) return "redirect:/login";
+        if (!hasClubPermission(session, id, "MANAGE_PORS"))
+            return "redirect:/club/" + id + "?error=Unauthorized";
+
         PorRole role = roleRepository.findById(roleId).orElseThrow();
         if("GenSec".equalsIgnoreCase(role.getTitle())) return "redirect:/club/" + id + "?error=Cannot+modify+GenSecs+from+Club+View!";
         
@@ -125,7 +177,14 @@ public class ClubController {
     }
     
     @PostMapping("/club/{id}/remove-por")
-    public String removePor(@PathVariable Integer id, @RequestParam String rollNumber, @RequestParam Integer membershipId, HttpSession session) {
+    public String removePor(@PathVariable Integer id,
+                            @RequestParam String rollNumber,
+                            @RequestParam Integer membershipId,
+                            HttpSession session) {
+        if (!isLoggedIn(session)) return "redirect:/login";
+        if (!hasClubPermission(session, id, "MANAGE_PORS"))
+            return "redirect:/club/" + id + "?error=Unauthorized";
+
         ClubMembership cm = membershipRepository.findById(membershipId).orElseThrow();
         if(cm.getRole() != null && "GenSec".equalsIgnoreCase(cm.getRole().getTitle())) return "redirect:/club/" + id + "?error=Cannot+demote+GenSecs!";
         cm.setRole(null);
@@ -135,11 +194,43 @@ public class ClubController {
     }
 
     @PostMapping("/club/{id}/remove-member")
-    public String removeMember(@PathVariable Integer id, @RequestParam String rollNumber, @RequestParam Integer membershipId, HttpSession session) {
+    public String removeMember(@PathVariable Integer id,
+                               @RequestParam String rollNumber,
+                               @RequestParam Integer membershipId,
+                               HttpSession session) {
+        if (!isLoggedIn(session)) return "redirect:/login";
+        if (!hasClubPermission(session, id, "MANAGE_MEMBERS"))
+            return "redirect:/club/" + id + "?error=Unauthorized";
+
         ClubMembership cm = membershipRepository.findById(membershipId).orElseThrow();
         if(cm.getRole() != null && "GenSec".equalsIgnoreCase(cm.getRole().getTitle())) return "redirect:/club/" + id + "?error=Cannot+kick+GenSecs!";
         membershipRepository.delete(cm);
         loggingService.log(session.getAttribute("USER_ROLL").toString(), "Kick Member", rollNumber + " removed from club " + id);
         return "redirect:/club/" + id + "?success=MemberKicked";
+    }
+
+    @PostMapping("/club/{id}/assign-vertical")
+    public String assignVertical(@PathVariable Integer id,
+                                 @RequestParam Integer membershipId,
+                                 @RequestParam(required = false) Integer verticalId,
+                                 HttpSession session) {
+        if (!isLoggedIn(session)) return "redirect:/login";
+        if (!hasClubPermission(session, id, "MANAGE_MEMBERS"))
+            return "redirect:/club/" + id + "?error=Unauthorized";
+
+        ClubMembership cm = membershipRepository.findById(membershipId).orElseThrow();
+        // Sanity check: membership must belong to this club
+        if (!cm.getClub().getClubId().equals(id))
+            return "redirect:/club/" + id + "?error=Invalid+membership";
+
+        if (verticalId != null) {
+            cm.setVertical(verticalRepository.findById(verticalId).orElse(null));
+        } else {
+            cm.setVertical(null);
+        }
+        membershipRepository.save(cm);
+        loggingService.log(session.getAttribute("USER_ROLL").toString(), "Assign Vertical",
+                cm.getStudent().getRollNumber() + " vertical updated in club " + id);
+        return "redirect:/club/" + id + "?success=VerticalUpdated";
     }
 }
